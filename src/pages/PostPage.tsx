@@ -23,6 +23,7 @@ export function PostPage() {
   const params = useParams();
   const location = useLocation();
   const postId = parsePostId(params.postId);
+  // Параметры списка переносим в ссылку назад, чтобы сохранить контекст пользователя.
   const listSearch = createPostsSearchParams(
     parsePostsSearchParams(new URLSearchParams(location.search)),
   );

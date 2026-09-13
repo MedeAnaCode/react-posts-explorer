@@ -15,6 +15,7 @@ export function usePostsPagination() {
   useEffect(() => {
     const normalizedSearch = { page, limit };
 
+    // Канонический URL делает историю браузера и прямые ссылки воспроизводимыми.
     if (!isCanonicalPostsSearch(searchParams, normalizedSearch)) {
       setSearchParams(createPostsSearchParams(normalizedSearch), {
         replace: true,

@@ -15,6 +15,7 @@ export function postsQueryOptions(page: number, limit: number) {
   return queryOptions({
     queryKey: postKeys.list(page, limit),
     queryFn: ({ signal }) => getPosts({ page, limit, signal }),
+    // Предыдущая страница остаётся видимой до ответа сервера и не создаёт скачка макета.
     placeholderData: keepPreviousData,
   });
 }
