@@ -90,6 +90,18 @@ docs: уточнить запуск контейнера
 
 `npm run format` изменяет файлы. После него нужно повторно просмотреть diff и запустить `npm run format:check`.
 
+## Автоматические проверки в GitHub
+
+Workflow `.github/workflows/ci.yml` работает в трёх режимах:
+
+1. `push` в любую ветку запускает `Lint (non-blocking)`. Ошибки ESLint видны в логе и GitHub Summary, но не делают workflow красным.
+2. `pull_request` в `master` запускает блокирующие `Unit tests`, `End-to-end tests` и `Production readiness`.
+3. `workflow_dispatch` вручную запускает тот же полный набор перед production-релизом.
+
+Итоговый job `PR gate` зависит от всех блокирующих проверок. В настройках защиты `master` его нужно выбрать как обязательный status check; после этого GitHub не позволит объединить pull request с упавшими unit-, end-to-end или production-проверками.
+
+`Production readiness` проверяет форматирование, TypeScript и runtime-зависимости, собирает реальный Docker-образ и запускает его для smoke-теста `/healthz`, прямого SPA-маршрута и HTTP security headers. Это выявляет проблемы именно в поставляемом образе, а не только в dev-сервере.
+
 ## Стратегия тестирования
 
 ### Модульные тесты

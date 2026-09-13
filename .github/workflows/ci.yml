@@ -2,41 +2,208 @@ name: CI
 
 on:
   push:
-    branches: [master, develop]
   pull_request:
-    branches: [master, develop]
+    branches:
+      - master
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
+env:
+  CI: true
+
 jobs:
-  quality:
-    name: Проверка качества и сборки
+  lint:
+    name: Lint (non-blocking)
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        id: eslint
+        continue-on-error: true
+        run: npm run lint
+
+      - name: Publish lint result
+        if: always()
+        env:
+          LINT_OUTCOME: ${{ steps.eslint.outcome }}
+        run: |
+          if [ "$LINT_OUTCOME" = "success" ]; then
+            echo "### ✅ ESLint passed" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::ESLint found problems. The commit check is intentionally non-blocking."
+            echo "### ⚠️ ESLint needs attention" >> "$GITHUB_STEP_SUMMARY"
+            echo "This check does not block the commit, but the reported issues should be fixed." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  unit-tests:
+    name: Unit tests
+    if: github.event_name != 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
     steps:
-      - name: Получить исходный код
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Настроить Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version-file: .nvmrc
           cache: npm
 
-      - name: Установить зависимости
+      - name: Install dependencies
         run: npm ci
 
-      - name: Проверить качество проекта
-        run: npm run check
+      - name: Run unit and integration tests with coverage
+        run: npm run test:coverage
 
-      - name: Проверить уязвимости зависимостей
-        run: npm audit --audit-level=high
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-coverage
+          path: coverage/
+          if-no-files-found: ignore
+          retention-days: 7
 
-      - name: Собрать production-образ
-        run: docker build --tag posts-showcase:ci .
+  end-to-end-tests:
+    name: End-to-end tests
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  production-readiness:
+    name: Production readiness
+    if: github.event_name != 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Check TypeScript
+        run: npm run typecheck
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Build production image
+        run: docker build --tag posts-showcase:${{ github.sha }} .
+
+      - name: Smoke-test production image
+        env:
+          IMAGE_TAG: posts-showcase:${{ github.sha }}
+        run: |
+          container_name="posts-showcase-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          cleanup() {
+            docker rm --force "$container_name" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          docker run --detach --name "$container_name" --publish 127.0.0.1::80 "$IMAGE_TAG"
+          host_port="$(docker port "$container_name" 80/tcp)"
+          host_port="${host_port##*:}"
+          base_url="http://127.0.0.1:${host_port}"
+
+          ready=false
+          for attempt in {1..30}; do
+            if curl --fail --silent "$base_url/healthz" >/dev/null; then
+              ready=true
+              break
+            fi
+            sleep 2
+          done
+
+          if [ "$ready" != "true" ]; then
+            docker logs "$container_name"
+            exit 1
+          fi
+
+          curl --fail --silent --show-error "$base_url/posts/1" | grep --fixed-strings '<div id="root"></div>'
+          curl --fail --silent --show-error --head "$base_url/" | grep --ignore-case '^x-content-type-options: nosniff'
+          curl --fail --silent --show-error --head "$base_url/" | grep --ignore-case '^x-frame-options: SAMEORIGIN'
+          curl --fail --silent --show-error --head "$base_url/" | grep --ignore-case '^referrer-policy: strict-origin-when-cross-origin'
+
+  pull-request-gate:
+    name: PR gate
+    if: always() && github.event_name != 'push'
+    needs:
+      - unit-tests
+      - end-to-end-tests
+      - production-readiness
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Require every blocking check
+        env:
+          UNIT_RESULT: ${{ needs.unit-tests.result }}
+          E2E_RESULT: ${{ needs.end-to-end-tests.result }}
+          PRODUCTION_RESULT: ${{ needs.production-readiness.result }}
+        run: |
+          test "$UNIT_RESULT" = "success"
+          test "$E2E_RESULT" = "success"
+          test "$PRODUCTION_RESULT" = "success"
