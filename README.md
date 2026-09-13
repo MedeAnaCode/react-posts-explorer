@@ -42,10 +42,10 @@ Copy-Item .env.example .env
 Vite выведет локальный адрес приложения в терминал. По умолчанию API задаётся в `.env.example`:
 
 ```dotenv
-VITE_API_URL=https://jsonplaceholder.typicode.com
+VITE_API_BASE_URL=https://jsonplaceholder.typicode.com
 ```
 
-Значение должно быть базовым URL без `/posts` в конце. Переменные Vite попадают в клиентскую сборку и не подходят для секретов. После изменения `VITE_API_URL` перезапустите dev-сервер, а production-образ соберите заново.
+Значение должно быть базовым URL без `/posts` в конце. Переменные Vite попадают в клиентскую сборку и не подходят для секретов. После изменения `VITE_API_BASE_URL` перезапустите dev-сервер, а production-образ соберите заново.
 
 ## Запуск в Docker
 
