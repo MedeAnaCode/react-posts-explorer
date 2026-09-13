@@ -35,4 +35,3 @@ export function isCanonicalPostsSearch(
 ) {
   return params.toString() === createPostsSearchParams(search).toString();
 }
-

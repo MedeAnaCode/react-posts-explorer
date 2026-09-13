@@ -26,4 +26,3 @@ export function postQueryOptions(postId: number) {
     enabled: Number.isInteger(postId) && postId > 0,
   });
 }
-

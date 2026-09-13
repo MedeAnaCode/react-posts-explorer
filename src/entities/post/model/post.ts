@@ -15,4 +15,3 @@ export type PostsPageData = {
   posts: Post[];
   totalCount: number | null;
 };
-

@@ -51,7 +51,10 @@ export async function getJson(
   }
 
   try {
-    return { data: (await response.json()) as unknown, headers: response.headers };
+    return {
+      data: (await response.json()) as unknown,
+      headers: response.headers,
+    };
   } catch (error) {
     throw new ApiError('Сервер вернул ответ в неизвестном формате.', {
       kind: 'validation',
@@ -59,4 +62,3 @@ export async function getJson(
     });
   }
 }
-

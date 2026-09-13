@@ -20,4 +20,3 @@ export function PostCard({ post, listSearch }: PostCardProps) {
     </article>
   );
 }
-

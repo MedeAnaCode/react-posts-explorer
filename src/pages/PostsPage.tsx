@@ -41,7 +41,9 @@ export function PostsPage() {
           <select
             className={styles.select}
             value={limit}
-            onChange={(event) => setLimit(Number(event.target.value) as PostsLimit)}
+            onChange={(event) =>
+              setLimit(Number(event.target.value) as PostsLimit)
+            }
           >
             {AVAILABLE_LIMITS.map((value) => (
               <option key={value} value={value}>

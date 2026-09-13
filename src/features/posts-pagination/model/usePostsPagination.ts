@@ -10,22 +10,26 @@ import {
 
 export function usePostsPagination() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const search = parsePostsSearchParams(searchParams);
+  const { page, limit } = parsePostsSearchParams(searchParams);
 
   useEffect(() => {
-    if (!isCanonicalPostsSearch(searchParams, search)) {
-      setSearchParams(createPostsSearchParams(search), { replace: true });
+    const normalizedSearch = { page, limit };
+
+    if (!isCanonicalPostsSearch(searchParams, normalizedSearch)) {
+      setSearchParams(createPostsSearchParams(normalizedSearch), {
+        replace: true,
+      });
     }
-  }, [search.limit, search.page, searchParams, setSearchParams]);
+  }, [limit, page, searchParams, setSearchParams]);
 
   return {
-    ...search,
-    setPage(page: number) {
-      setSearchParams(createPostsSearchParams({ ...search, page }));
+    page,
+    limit,
+    setPage: (nextPage: number) => {
+      setSearchParams(createPostsSearchParams({ page: nextPage, limit }));
     },
-    setLimit(limit: PostsLimit) {
-      setSearchParams(createPostsSearchParams({ page: 1, limit }));
+    setLimit: (nextLimit: PostsLimit) => {
+      setSearchParams(createPostsSearchParams({ page: 1, limit: nextLimit }));
     },
   };
 }
-

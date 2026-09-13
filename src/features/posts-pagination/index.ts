@@ -6,4 +6,3 @@ export {
 export type { PostsLimit, PostsSearch } from './model/searchParams';
 export { usePostsPagination } from './model/usePostsPagination';
 export { PostsPagination } from './ui/PostsPagination';
-

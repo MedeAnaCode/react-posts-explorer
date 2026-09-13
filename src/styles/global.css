@@ -34,7 +34,11 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 10% 0%, rgb(210 233 222 / 60%), transparent 34rem),
+    radial-gradient(
+      circle at 10% 0%,
+      rgb(210 233 222 / 60%),
+      transparent 34rem
+    ),
     #f2f0e8;
 }
 

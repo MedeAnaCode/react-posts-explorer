@@ -54,4 +54,3 @@ export async function getPost(postId: number, signal?: AbortSignal) {
 
   return result.data;
 }
-
