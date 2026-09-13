@@ -1,0 +1,23 @@
+@startuml
+!include <C4/C4_Container>
+
+title C4 — уровень 2: контейнеры
+
+LAYOUT_LEFT_RIGHT()
+
+Person(reader, "Читатель", "Работает с приложением в браузере")
+
+System_Boundary(postsSystem, "Список постов") {
+  Container(webServer, "Статический веб-сервер", "Nginx 1.29 Alpine", "Раздаёт index.html и ассеты; возвращает index.html для клиентских маршрутов; предоставляет /healthz")
+  Container(spa, "Браузерное SPA", "React 19, TypeScript, React Router, TanStack Query, Zod", "Отображает список и детали, хранит навигацию в URL, кеширует запросы и проверяет ответы API")
+}
+
+System_Ext(jsonPlaceholder, "JSONPlaceholder", "Открытый REST API публикаций")
+
+Rel(reader, webServer, "Запрашивает приложение и прямые маршруты", "HTTP(S)")
+Rel(webServer, spa, "Доставляет HTML, JavaScript и CSS", "Статические файлы")
+Rel(reader, spa, "Взаимодействует после загрузки", "Браузерный UI")
+Rel(spa, jsonPlaceholder, "GET /posts и GET /posts/{id}", "HTTPS / JSON")
+
+SHOW_LEGEND()
+@enduml

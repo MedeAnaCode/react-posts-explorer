@@ -1,0 +1,119 @@
+@startuml
+title Основная логика: список, пагинация и открытие публикации
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam ParticipantPadding 18
+skinparam BoxPadding 10
+autonumber
+
+actor "Читатель" as User
+participant "Браузер" as Browser
+participant "React Router" as Router
+participant "PostsPage / PostPage" as Page
+participant "usePostsPagination" as Pagination
+participant "TanStack Query" as Query
+participant "Post API" as PostApi
+participant "HTTP client" as Http
+participant "Zod schemas" as Zod
+participant "JSONPlaceholder" as ExternalApi
+
+== Открытие списка ==
+User -> Browser: Открывает / или /posts?page=...&limit=...
+Browser -> Router: Разрешить маршрут
+alt Открыт корневой маршрут /
+  Router -> Browser: replace /posts?page=1&limit=10
+end
+Router -> Page: Отрисовать PostsPage
+Page -> Pagination: Прочитать query-параметры
+Pagination -> Pagination: Проверить page и limit
+alt Параметры отсутствуют или недопустимы
+  Pagination -> Browser: replace каноническим URL\n?page=1&limit=10
+end
+Pagination --> Page: page, limit, setPage(), setLimit()
+Page -> Query: useQuery([posts, list, {page, limit}])
+
+alt В кеше есть свежая страница
+  Query --> Page: PostsPageData из кеша
+else Требуется запрос
+  Query -> PostApi: getPosts(page, limit, AbortSignal)
+  PostApi -> Http: GET /posts?_page=...&_limit=...
+  Http -> ExternalApi: HTTP GET, Accept: application/json
+  ExternalApi --> Http: JSON[] + X-Total-Count
+  Http --> PostApi: unknown data + headers
+  PostApi -> Zod: postsSchema.safeParse(data)
+  alt Контракт валиден
+    Zod --> PostApi: Post[]
+    PostApi -> PostApi: Разобрать X-Total-Count
+    PostApi --> Query: { posts, totalCount }
+    Query --> Page: Данные и состояния запроса
+  else Контракт нарушен
+    Zod --> PostApi: Validation error
+    PostApi --> Query: ApiError(kind=validation)
+    Query --> Page: isError + возможность refetch()
+  end
+end
+Page --> Browser: Карточки, пагинация или MessageState
+Browser --> User: Показывает результат
+
+== Смена страницы или лимита ==
+User -> Page: Нажимает «Вперёд/Назад»\nили выбирает limit
+Page -> Pagination: setPage(next) / setLimit(next)
+Pagination -> Browser: Обновить ?page=...&limit=...\n(limit сбрасывает page на 1)
+Browser -> Router: Изменение location
+Router -> Page: Повторная отрисовка
+Page -> Query: Новый query key
+note right of Query
+  keepPreviousData сохраняет прежний список
+  видимым до завершения нового запроса.
+end note
+Query -> PostApi: getPosts(newPage, newLimit)
+PostApi -> Http: GET /posts с новой пагинацией
+Http -> ExternalApi: HTTP GET
+ExternalApi --> Http: Следующая порция Post[]
+Http --> PostApi: Ответ
+PostApi -> Zod: Проверить контракт
+Zod --> PostApi: Валидированные данные
+PostApi --> Query: PostsPageData
+Query --> Page: Обновить список и доступность кнопок
+Page --> User: Показывает новую страницу
+
+== Открытие публикации и возврат ==
+User -> Page: Нажимает «Читать полностью»
+Page -> Browser: /posts/{id}?page=...&limit=...
+Browser -> Router: Разрешить /posts/:postId
+Router -> Page: Отрисовать PostPage
+Page -> Page: Проверить положительный целый postId
+Page -> Query: useQuery([posts, detail, postId])
+alt postId некорректен
+  Query --> Page: Запрос отключён
+  Page --> User: «Публикация не найдена»
+else postId корректен
+  Query -> PostApi: getPost(postId, AbortSignal)
+  PostApi -> Http: GET /posts/{postId}
+  Http -> ExternalApi: HTTP GET
+  alt Ответ 200
+    ExternalApi --> Http: JSON объекта Post
+    Http --> PostApi: unknown data
+    PostApi -> Zod: postSchema.safeParse(data)
+    Zod --> PostApi: Валидированный Post
+    PostApi --> Query: Post
+    Query --> Page: Данные публикации
+    Page --> User: Заголовок и полный текст
+  else Ответ 404
+    ExternalApi --> Http: 404
+    Http --> Query: ApiError(kind=http, status=404)
+    Query --> Page: isError
+    Page --> User: «Публикация не найдена»
+  end
+end
+User -> Page: Нажимает «Вернуться к списку»
+Page -> Browser: /posts?page=...&limit=...
+note right of Browser
+  Параметры списка перенесены в ссылку,
+  поэтому контекст пагинации сохраняется.
+end note
+
+@enduml

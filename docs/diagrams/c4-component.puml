@@ -1,0 +1,41 @@
+@startuml
+!include <C4/C4_Component>
+
+title C4 — уровень 3: компоненты браузерного SPA
+
+LAYOUT_LEFT_RIGHT()
+
+Person(reader, "Читатель", "Управляет приложением через браузер")
+Container_Boundary(spa, "Браузерное SPA") {
+  Component(app, "App и QueryClientProvider", "React / TanStack Query", "Создаёт общий QueryClient и подключает маршрутизацию")
+  Component(router, "AppRouter", "React Router", "Сопоставляет /, /posts, /posts/:postId и неизвестные маршруты")
+  Component(pages, "Страницы", "PostsPage, PostPage, NotFoundPage", "Компонуют UI, запросы и состояния загрузки, ошибки и пустого результата")
+  Component(pagination, "Пагинация", "usePostsPagination, searchParams, PostsPagination", "Нормализует page/limit, синхронизирует URL и управляет переходами")
+  Component(postUi, "Представление публикации", "PostCard", "Показывает краткую публикацию и формирует ссылку на детали с контекстом списка")
+  Component(queryConfig, "Конфигурация запросов", "postQueries", "Формирует ключи кеша и query options для списка и деталей")
+  Component(queryCache, "Кеш серверного состояния", "TanStack Query", "Управляет жизненным циклом, кешем, refetch, AbortSignal и предыдущими данными")
+  Component(postApi, "API публикаций", "postApi", "Формирует запросы, разбирает X-Total-Count и преобразует ответы в типизированные данные")
+  Component(validation, "Модель и схемы", "TypeScript + Zod", "Описывает Post и проверяет данные во время выполнения")
+  Component(httpClient, "HTTP-клиент", "Fetch API + ApiError", "Собирает URL, выполняет GET и классифицирует network/http/validation ошибки")
+  Component(messageState, "Общие состояния UI", "MessageState", "Единообразно показывает загрузку, ошибку, пустой результат и повтор запроса")
+}
+
+System_Ext(jsonPlaceholder, "JSONPlaceholder", "Внешний REST API")
+
+Rel(reader, pages, "Просматривает и инициирует действия", "UI events")
+Rel(app, router, "Подключает")
+Rel(app, queryCache, "Предоставляет общий экземпляр")
+Rel(router, pages, "Отрисовывает страницу маршрута")
+Rel(pages, pagination, "Читает и изменяет page/limit")
+Rel(pages, postUi, "Отображает карточки")
+Rel(pages, queryConfig, "Запрашивает список или детали")
+Rel(pages, messageState, "Показывает состояния")
+Rel(pagination, router, "Изменяет query-параметры URL")
+Rel(queryConfig, queryCache, "Задаёт query key и query function")
+Rel(queryCache, postApi, "Вызывает query function с AbortSignal")
+Rel(postApi, httpClient, "Выполняет GET")
+Rel(postApi, validation, "Проверяет response data")
+Rel(httpClient, jsonPlaceholder, "GET /posts, GET /posts/{id}", "HTTPS / JSON")
+
+SHOW_LEGEND()
+@enduml

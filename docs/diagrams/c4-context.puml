@@ -1,0 +1,16 @@
+@startuml
+!include <C4/C4_Context>
+
+title C4 — уровень 1: контекст системы
+
+LAYOUT_LEFT_RIGHT()
+
+Person(reader, "Читатель", "Просматривает каталог публикаций и открывает отдельные записи")
+System(postsShowcase, "Список постов", "Статическое одностраничное веб-приложение для чтения публикаций")
+System_Ext(jsonPlaceholder, "JSONPlaceholder", "Внешний открытый REST API; источник публикаций и общего количества")
+
+Rel(reader, postsShowcase, "Просматривает список, меняет страницу и открывает публикацию", "HTTPS / браузер")
+Rel(postsShowcase, jsonPlaceholder, "Читает список и отдельные публикации", "HTTPS / JSON")
+
+SHOW_LEGEND()
+@enduml

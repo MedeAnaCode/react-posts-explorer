@@ -1,0 +1,55 @@
+@startuml
+title ERD — логическая модель внешних данных
+
+hide circle
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype ortho
+skinparam entity {
+  BackgroundColor #F7F9FC
+  BorderColor #355070
+  FontColor #1F2937
+}
+
+entity "USER\n<<external reference>>" as user {
+  * id : integer <<PK>>
+  --
+  Приложение не загружает данные пользователя
+}
+
+entity "POST\n<<validated entity>>" as post {
+  * id : integer <<PK>>
+  --
+  * userId : integer <<FK>>
+  * title : string
+  * body : string
+}
+
+entity "POSTS_PAGE_DATA\n<<response DTO>>" as pageData {
+  * posts : Post[0..*]
+  --
+  totalCount : integer | null
+}
+
+user ||--o{ post : "автор публикаций"
+pageData ||..o{ post : "агрегирует в ответе"
+
+note right of post
+  Проверка Zod:
+  • id и userId — положительные целые;
+  • title и body — непустые строки.
+end note
+
+note bottom of pageData
+  page и limit — параметры запроса и часть query key,
+  но не поля сохраняемой сущности.
+  totalCount извлекается из X-Total-Count.
+end note
+
+legend left
+  В проекте нет собственной базы данных.
+  Диаграмма описывает логический контракт JSONPlaceholder
+  и объект, который API-слой возвращает интерфейсу.
+endlegend
+
+@enduml
