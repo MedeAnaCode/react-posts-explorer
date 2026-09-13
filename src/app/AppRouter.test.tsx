@@ -95,6 +95,50 @@ describe('маршрутизация приложения', () => {
     ).toBeInTheDocument();
   });
 
+  it('явно сообщает о пустой странице списка', async () => {
+    server.use(
+      http.get('https://jsonplaceholder.typicode.com/posts', () =>
+        HttpResponse.json([], { headers: { 'X-Total-Count': '20' } }),
+      ),
+    );
+    renderRouter('/posts?page=3&limit=10');
+
+    expect(
+      await screen.findByRole('heading', { name: 'На этой странице пусто' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'На предыдущую страницу' }),
+    ).toBeEnabled();
+  });
+
+  it.each([
+    {
+      name: 'невалидный ответ',
+      response: () => HttpResponse.json({ id: 'не число' }),
+      description:
+        'Ответ сервера не соответствует ожидаемому формату. Попробуйте ещё раз позже.',
+    },
+    {
+      name: 'сетевую ошибку',
+      response: () => HttpResponse.error(),
+      description:
+        'Не удалось загрузить публикации. Проверьте подключение и повторите попытку.',
+    },
+  ])(
+    'показывает понятное состояние для: $name',
+    async ({ response, description }) => {
+      server.use(
+        http.get('https://jsonplaceholder.typicode.com/posts', response),
+      );
+      renderRouter('/posts?page=1&limit=10');
+
+      expect(await screen.findByText(description)).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Повторить запрос' }),
+      ).toBeEnabled();
+    },
+  );
+
   it('показывает страницу для неизвестного адреса', () => {
     renderRouter('/неизвестный-раздел');
 
