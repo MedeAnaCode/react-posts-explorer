@@ -4,7 +4,7 @@
 
 ## Требования к окружению
 
-- Node.js 22;
+- Node.js 22.13 или новее;
 - npm из поставки Node.js;
 - Git;
 - Docker с Compose для проверки production-контейнера;
@@ -162,7 +162,7 @@ docker compose down
 
 ## Диагностика
 
-**`npm ci` сообщает о несовместимой версии Node.js.** Переключитесь на Node.js 22 и повторите установку с lock-файлом.
+**`npm ci` сообщает о несовместимой версии Node.js.** Переключитесь на Node.js 22.13 или новее и повторите установку с lock-файлом.
 
 **Playwright не находит браузер.** Выполните `npx playwright install chromium` от того же пользователя и повторите `npm run test:e2e`.
 
@@ -186,4 +186,3 @@ docker compose down
 - в diff нет секретов, временных файлов и результатов сборки.
 
 Связанные документы: [README](../README.md), [архитектура](architecture.md), [требования](requirements.md).
-

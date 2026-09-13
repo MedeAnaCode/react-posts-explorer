@@ -3,6 +3,7 @@ import { ApiError } from './apiError';
 const DEFAULT_API_BASE_URL = 'https://jsonplaceholder.typicode.com';
 
 function getApiBaseUrl() {
+  // Убираем все завершающие слеши, чтобы пути ресурсов всегда склеивались одинаково.
   return (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(
     /\/+$/,
     '',

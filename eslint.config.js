@@ -7,6 +7,10 @@ import tseslint from 'typescript-eslint';
 export default tseslint.config(
   {
     ignores: [
+      '.pnpm-store',
+      '.tmp',
+      '.worktrees',
+      'contexts',
       'coverage',
       'dist',
       'eslint.config.js',
