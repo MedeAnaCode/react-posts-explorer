@@ -1,17 +1,9 @@
 import { ApiError } from './apiError';
 
-const DEFAULT_API_BASE_URL = 'https://jsonplaceholder.typicode.com';
-
-function getApiBaseUrl() {
-  // Убираем все завершающие слеши, чтобы пути ресурсов всегда склеивались одинаково.
-  return (import.meta.env.VITE_API_BASE_URL || DEFAULT_API_BASE_URL).replace(
-    /\/+$/,
-    '',
-  );
-}
+const API_BASE_PATH = '/guardian-api';
 
 function createRequestUrl(path: string, params?: URLSearchParams) {
-  const url = new URL(`${getApiBaseUrl()}${path}`);
+  const url = new URL(`${API_BASE_PATH}${path}`, window.location.origin);
 
   if (params) {
     url.search = params.toString();

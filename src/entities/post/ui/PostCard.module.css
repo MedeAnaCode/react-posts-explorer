@@ -3,7 +3,6 @@
   display: flex;
   min-height: 100%;
   flex-direction: column;
-  padding: clamp(1.25rem, 3vw, 1.75rem);
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
@@ -40,8 +39,19 @@
   transform: scaleX(1);
 }
 
+.image {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: var(--color-accent-soft);
+}
+
+.content {
+  padding: clamp(1.25rem, 3vw, 1.75rem);
+}
+
 .meta {
-  margin: 0 0 1rem;
+  margin: 0 0 0.85rem;
   color: var(--color-accent);
   font-size: 0.75rem;
   font-weight: 800;
@@ -56,9 +66,16 @@
   line-height: 1.15;
 }
 
+.byline {
+  margin: 0.75rem 0 0;
+  color: var(--color-ink);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
 .body {
   display: -webkit-box;
-  margin: 1rem 0 1.5rem;
+  margin: 1rem 0 0;
   overflow: hidden;
   color: var(--color-muted);
   line-height: 1.65;
@@ -68,9 +85,14 @@
 
 .link {
   margin-top: auto;
+  padding: 0 clamp(1.25rem, 3vw, 1.75rem) clamp(1.25rem, 3vw, 1.75rem);
   color: var(--color-accent);
   font-weight: 800;
   text-decoration: none;
+}
+
+.card:not(:has(.image)) .content {
+  padding-bottom: 1rem;
 }
 
 .link::after {
