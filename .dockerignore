@@ -1,6 +1,9 @@
 .git
 .github
+.pnpm-store
+.tmp
 .worktrees
+contexts
 coverage
 dist
 docs
