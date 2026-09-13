@@ -11,12 +11,7 @@ import { MessageState } from '../shared/ui';
 import styles from './PostPage.module.css';
 
 function parsePostId(value: string | undefined) {
-  if (!value || !/^\d+$/.test(value)) {
-    return null;
-  }
-
-  const postId = Number(value);
-  return Number.isSafeInteger(postId) && postId > 0 ? postId : null;
+  return value?.trim() || null;
 }
 
 export function PostPage() {
@@ -27,7 +22,7 @@ export function PostPage() {
   const listSearch = createPostsSearchParams(
     parsePostsSearchParams(new URLSearchParams(location.search)),
   );
-  const query = useQuery(postQueryOptions(postId ?? 0));
+  const query = useQuery(postQueryOptions(postId ?? ''));
   const isNotFound =
     postId === null ||
     (query.isError && isApiError(query.error) && query.error.status === 404);
@@ -43,12 +38,12 @@ export function PostPage() {
       {backLink}
       {isNotFound ? (
         <MessageState
-          title="Публикация не найдена"
-          description="Возможно, её удалили или в адресе указан неверный номер."
+          title="Новость не найдена"
+          description="Возможно, её удалили или в адресе указан неверный идентификатор."
         />
       ) : query.isPending ? (
         <MessageState
-          title="Открываем публикацию"
+          title="Открываем новость"
           description="Загружаем полный текст."
           busy
         />
@@ -61,9 +56,38 @@ export function PostPage() {
         />
       ) : (
         <article className={styles.article}>
-          <p className="eyebrow">Публикация · {query.data.id}</p>
-          <h1 className={styles.title}>{query.data.title}</h1>
-          <p className={styles.body}>{query.data.body}</p>
+          {query.data.fields?.thumbnail ? (
+            <img
+              className={styles.hero}
+              src={query.data.fields.thumbnail}
+              alt=""
+            />
+          ) : null}
+          <p className="eyebrow">{query.data.sectionName}</p>
+          <h1 className={styles.title}>{query.data.webTitle}</h1>
+          <div className={styles.meta}>
+            {query.data.fields?.byline ? (
+              <p className={styles.byline}>{query.data.fields.byline}</p>
+            ) : null}
+            <time dateTime={query.data.webPublicationDate}>
+              {new Intl.DateTimeFormat('ru-RU', {
+                dateStyle: 'long',
+                timeStyle: 'short',
+              }).format(new Date(query.data.webPublicationDate))}
+            </time>
+          </div>
+          <p className={styles.body}>
+            {query.data.fields?.bodyText ??
+              'Полный текст этой новости недоступен в API.'}
+          </p>
+          <a
+            className={styles.sourceLink}
+            href={query.data.webUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Открыть оригинал на The Guardian <span aria-hidden="true">↗</span>
+          </a>
         </article>
       )}
     </main>

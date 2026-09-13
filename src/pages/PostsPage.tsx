@@ -17,7 +17,7 @@ function getErrorDescription(error: unknown) {
     return 'Ответ сервера не соответствует ожидаемому формату. Попробуйте ещё раз позже.';
   }
 
-  return 'Не удалось загрузить публикации. Проверьте подключение и повторите попытку.';
+  return 'Не удалось загрузить новости. Проверьте подключение и повторите попытку.';
 }
 
 export function PostsPage() {
@@ -29,11 +29,11 @@ export function PostsPage() {
     <main className="page-shell">
       <header className={styles.header}>
         <div>
-          <p className="eyebrow">Публикации / JSONPlaceholder</p>
-          <h1 className={styles.heading}>Список постов</h1>
+          <p className="eyebrow">Новости / The Guardian</p>
+          <h1 className={styles.heading}>Последние новости</h1>
           <p className={styles.lead}>
-            Небольшая коллекция заметок с серверной пагинацией и отдельной
-            страницей для чтения.
+            Свежие материалы редакции с авторами, иллюстрациями и полным текстом
+            на отдельной странице.
           </p>
         </div>
         <label className={styles.limitLabel}>
@@ -47,7 +47,7 @@ export function PostsPage() {
           >
             {AVAILABLE_LIMITS.map((value) => (
               <option key={value} value={value}>
-                {value} публикаций
+                {value} новостей
               </option>
             ))}
           </select>
@@ -56,8 +56,8 @@ export function PostsPage() {
 
       {query.isPending ? (
         <MessageState
-          title="Собираем публикации"
-          description="Запрашиваем свежую страницу каталога. Это займёт несколько секунд."
+          title="Собираем новости"
+          description="Запрашиваем свежие материалы The Guardian. Это займёт несколько секунд."
           busy
         />
       ) : query.isError ? (

@@ -3,8 +3,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 
-import { server } from '../test/mocks/server';
 import { mockPosts } from '../test/mocks/handlers';
+import { server } from '../test/mocks/server';
 import { AppRouter } from './AppRouter';
 
 function renderRouter(pathname: string) {
@@ -21,12 +21,16 @@ function renderRouter(pathname: string) {
   );
 }
 
+function listResponse(results = mockPosts.slice(0, 10), total = 20) {
+  return { response: { status: 'ok', total, results } };
+}
+
 describe('маршрутизация приложения', () => {
-  it('перенаправляет с главной страницы к списку постов', async () => {
+  it('перенаправляет с главной страницы к списку новостей', async () => {
     renderRouter('/');
 
     expect(
-      await screen.findByRole('heading', { name: 'Список постов' }),
+      await screen.findByRole('heading', { name: 'Последние новости' }),
     ).toBeInTheDocument();
     expect(window.location.search).toBe('?page=1&limit=10');
   });
@@ -35,7 +39,7 @@ describe('маршрутизация приложения', () => {
     const user = userEvent.setup();
     renderRouter('/posts?page=-5&limit=99');
 
-    await screen.findByText('Тестовая публикация 1');
+    await screen.findByText('Тестовая новость 1');
     expect(window.location.search).toBe('?page=1&limit=10');
 
     await user.selectOptions(
@@ -45,7 +49,7 @@ describe('маршрутизация приложения', () => {
     expect(window.location.search).toBe('?page=1&limit=20');
   });
 
-  it('переходит к деталям и сохраняет параметры возврата', async () => {
+  it('переходит к новости со строковым id и сохраняет параметры возврата', async () => {
     const user = userEvent.setup();
     renderRouter('/posts?page=2&limit=10');
 
@@ -53,22 +57,32 @@ describe('маршрутизация приложения', () => {
       name: /Читать полностью/,
     });
     await user.click(detailLinks[0]);
-    expect(window.location.pathname).toBe('/posts/11');
+
+    expect(decodeURIComponent(window.location.pathname)).toBe(
+      `/posts/${mockPosts[10].id}`,
+    );
     expect(window.location.search).toBe('?page=2&limit=10');
     expect(
-      await screen.findByRole('heading', { name: 'Тестовая публикация 11' }),
+      await screen.findByRole('heading', { name: 'Тестовая новость 11' }),
     ).toBeInTheDocument();
+    expect(screen.getByText('Автор 11')).toBeInTheDocument();
+    expect(
+      screen.getByText('Полный текст тестовой новости 11.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: /Открыть оригинал на The Guardian/ }),
+    ).toHaveAttribute('href', mockPosts[10].webUrl);
 
     await user.click(screen.getByRole('link', { name: 'Вернуться к списку' }));
     expect(window.location.pathname).toBe('/posts');
     expect(window.location.search).toBe('?page=2&limit=10');
   });
 
-  it('показывает состояние отсутствующей публикации', async () => {
-    renderRouter('/posts/999?page=1&limit=10');
+  it('показывает состояние отсутствующей новости', async () => {
+    renderRouter('/posts/world%2F2026%2Fsep%2Fmissing?page=1&limit=10');
 
     expect(
-      await screen.findByRole('heading', { name: 'Публикация не найдена' }),
+      await screen.findByRole('heading', { name: 'Новость не найдена' }),
     ).toBeInTheDocument();
   });
 
@@ -76,13 +90,11 @@ describe('маршрутизация приложения', () => {
     const user = userEvent.setup();
     let attempts = 0;
     server.use(
-      http.get('https://jsonplaceholder.typicode.com/posts', () => {
+      http.get('*/guardian-api/search', () => {
         attempts += 1;
         return attempts === 1
           ? HttpResponse.json({}, { status: 500 })
-          : HttpResponse.json(mockPosts.slice(0, 10), {
-              headers: { 'X-Total-Count': '20' },
-            });
+          : HttpResponse.json(listResponse());
       }),
     );
     renderRouter('/posts?page=1&limit=10');
@@ -90,15 +102,13 @@ describe('маршрутизация приложения', () => {
     await user.click(
       await screen.findByRole('button', { name: 'Повторить запрос' }),
     );
-    expect(
-      await screen.findByText('Тестовая публикация 1'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Тестовая новость 1')).toBeInTheDocument();
   });
 
   it('явно сообщает о пустой странице списка', async () => {
     server.use(
-      http.get('https://jsonplaceholder.typicode.com/posts', () =>
-        HttpResponse.json([], { headers: { 'X-Total-Count': '20' } }),
+      http.get('*/guardian-api/search', () =>
+        HttpResponse.json(listResponse([], 20)),
       ),
     );
     renderRouter('/posts?page=3&limit=10');
@@ -114,7 +124,7 @@ describe('маршрутизация приложения', () => {
   it.each([
     {
       name: 'невалидный ответ',
-      response: () => HttpResponse.json({ id: 'не число' }),
+      response: () => HttpResponse.json({ response: { status: 'ok' } }),
       description:
         'Ответ сервера не соответствует ожидаемому формату. Попробуйте ещё раз позже.',
     },
@@ -122,14 +132,12 @@ describe('маршрутизация приложения', () => {
       name: 'сетевую ошибку',
       response: () => HttpResponse.error(),
       description:
-        'Не удалось загрузить публикации. Проверьте подключение и повторите попытку.',
+        'Не удалось загрузить новости. Проверьте подключение и повторите попытку.',
     },
   ])(
     'показывает понятное состояние для: $name',
     async ({ response, description }) => {
-      server.use(
-        http.get('https://jsonplaceholder.typicode.com/posts', response),
-      );
+      server.use(http.get('*/guardian-api/search', response));
       renderRouter('/posts?page=1&limit=10');
 
       expect(await screen.findByText(description)).toBeInTheDocument();

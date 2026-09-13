@@ -1,5 +1,9 @@
 import { ApiError, getJson } from '../../../shared/api';
-import { postSchema, postsSchema, type PostsPageData } from '../model/post';
+import {
+  postResponseSchema,
+  postsResponseSchema,
+  type PostsPageData,
+} from '../model/post';
 
 type GetPostsParams = {
   page: number;
@@ -7,50 +11,59 @@ type GetPostsParams = {
   signal?: AbortSignal;
 };
 
-function parseTotalCount(value: string | null) {
-  if (value === null || !/^\d+$/.test(value)) {
-    return null;
-  }
-
-  const totalCount = Number(value);
-  return Number.isSafeInteger(totalCount) ? totalCount : null;
-}
-
 export async function getPosts({
   page,
   limit,
   signal,
 }: GetPostsParams): Promise<PostsPageData> {
   const params = new URLSearchParams({
-    _page: String(page),
-    _limit: String(limit),
+    page: String(page),
+    'page-size': String(limit),
+    'order-by': 'newest',
+    'show-fields': 'byline,bodyText,thumbnail',
   });
-  const response = await getJson('/posts', { params, signal });
-  const result = postsSchema.safeParse(response.data);
+  const response = await getJson('/search', { params, signal });
+  const result = postsResponseSchema.safeParse(response.data);
 
   if (!result.success) {
-    throw new ApiError('Список публикаций имеет неверный формат.', {
+    throw new ApiError('Список новостей имеет неверный формат.', {
       kind: 'validation',
       cause: result.error,
     });
   }
 
   return {
-    posts: result.data,
-    totalCount: parseTotalCount(response.headers.get('X-Total-Count')),
+    posts: result.data.response.results,
+    totalCount: result.data.response.total,
   };
 }
 
-export async function getPost(postId: number, signal?: AbortSignal) {
-  const response = await getJson(`/posts/${postId}`, { signal });
-  const result = postSchema.safeParse(response.data);
+export async function getPost(postId: string, signal?: AbortSignal) {
+  const postIdSegments = postId.split('/');
+
+  if (
+    postIdSegments.some(
+      (segment) => segment.length === 0 || segment === '.' || segment === '..',
+    )
+  ) {
+    throw new ApiError('Идентификатор новости имеет неверный формат.', {
+      kind: 'validation',
+    });
+  }
+
+  const encodedPostId = postIdSegments.map(encodeURIComponent).join('/');
+  const params = new URLSearchParams({
+    'show-fields': 'byline,bodyText,thumbnail',
+  });
+  const response = await getJson(`/${encodedPostId}`, { params, signal });
+  const result = postResponseSchema.safeParse(response.data);
 
   if (!result.success) {
-    throw new ApiError('Публикация имеет неверный формат.', {
+    throw new ApiError('Новость имеет неверный формат.', {
       kind: 'validation',
       cause: result.error,
     });
   }
 
-  return result.data;
+  return result.data.response.content;
 }

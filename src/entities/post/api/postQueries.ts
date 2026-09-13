@@ -8,7 +8,7 @@ export const postKeys = {
   list: (page: number, limit: number) =>
     [...postKeys.lists(), { page, limit }] as const,
   details: () => [...postKeys.all, 'detail'] as const,
-  detail: (postId: number) => [...postKeys.details(), postId] as const,
+  detail: (postId: string) => [...postKeys.details(), postId] as const,
 };
 
 export function postsQueryOptions(page: number, limit: number) {
@@ -20,10 +20,10 @@ export function postsQueryOptions(page: number, limit: number) {
   });
 }
 
-export function postQueryOptions(postId: number) {
+export function postQueryOptions(postId: string) {
   return queryOptions({
     queryKey: postKeys.detail(postId),
     queryFn: ({ signal }) => getPost(postId, signal),
-    enabled: Number.isInteger(postId) && postId > 0,
+    enabled: postId.length > 0,
   });
 }
