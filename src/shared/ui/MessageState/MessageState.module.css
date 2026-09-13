@@ -1,0 +1,43 @@
+.state {
+  display: grid;
+  min-height: 18rem;
+  place-items: center;
+  padding: 3rem 1.5rem;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--color-surface) 72%, transparent);
+  text-align: center;
+}
+
+.content {
+  max-width: 31rem;
+}
+
+.title {
+  margin: 0;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.description {
+  margin: 0.75rem 0 0;
+  color: var(--color-muted);
+  line-height: 1.65;
+}
+
+.action {
+  min-height: 2.75rem;
+  margin-top: 1.5rem;
+  padding: 0.65rem 1.1rem;
+  border: 0;
+  border-radius: var(--radius-small);
+  color: white;
+  background: var(--color-accent);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.action:hover {
+  background: var(--color-accent-dark);
+}
