@@ -4,6 +4,7 @@
 
 | Диаграмма | PlantUML | PNG | SVG |
 | --- | --- | --- | --- |
+| Единая концептуальная схема | [c4-conceptual.puml](c4-conceptual.puml) | [c4-conceptual.png](c4-conceptual.png) | [c4-conceptual.svg](c4-conceptual.svg) |
 | Основная логика | [sequence-main-flow.puml](sequence-main-flow.puml) | [sequence-main-flow.png](sequence-main-flow.png) | [sequence-main-flow.svg](sequence-main-flow.svg) |
 | C4: контекст (C1) | [c4-context.puml](c4-context.puml) | [c4-context.png](c4-context.png) | [c4-context.svg](c4-context.svg) |
 | C4: контейнеры (C2) | [c4-container.puml](c4-container.puml) | [c4-container.png](c4-container.png) | [c4-container.svg](c4-container.svg) |
@@ -12,6 +13,7 @@
 
 ## Что показывают схемы
 
+- Единая концептуальная схема объединяет контекст, контейнеры и ключевые компоненты на одной картинке; с неё удобнее всего начинать знакомство с проектом.
 - Sequence охватывает загрузку и нормализацию URL, получение списка, смену пагинации, открытие публикации и возврат к исходной странице списка.
 - C4 показывает систему последовательно на уровнях контекста, контейнеров и компонентов браузерного SPA.
 - ERD описывает внешний контракт `Post` и DTO страницы. Это не физическая схема: приложение не имеет собственной базы данных и не загружает сущность пользователя.

@@ -1,0 +1,54 @@
+@startuml
+!include <C4/C4_Component>
+
+title Список постов — единая концептуальная C4-like схема
+
+LAYOUT_LEFT_RIGHT()
+
+Person(reader, "Читатель", "Просматривает каталог, меняет страницу и открывает публикацию")
+
+System_Boundary(postsSystem, "Система «Список постов»") {
+  Container(nginx, "Точка входа", "Nginx 1.29 Alpine", "Раздаёт production-сборку, поддерживает прямые SPA-маршруты и предоставляет /healthz")
+
+  Container_Boundary(spa, "Браузерное SPA · React 19 + TypeScript") {
+    Component(navigation, "Навигация и состояние URL", "React Router", "Маршруты /posts и /posts/:postId; page, limit и postId являются воспроизводимым состоянием навигации")
+    Component(ui, "Страницы и UI", "PostsPage, PostPage, PostCard, MessageState", "Показывает список, детали, загрузку, пустой результат, 404 и контролируемые ошибки")
+    Component(pagination, "Пагинация", "usePostsPagination", "Проверяет page/limit, приводит URL к каноническому виду и сбрасывает page при смене limit")
+    Component(query, "Серверное состояние", "TanStack Query", "Ключи кеша включают page/limit или postId; управляет загрузкой, кешем, refetch и AbortSignal")
+    Component(dataBoundary, "Граница данных", "postQueries + postApi + Fetch API", "Формирует GET-запросы, читает X-Total-Count и классифицирует network/http/validation ошибки")
+    Component(validation, "Контракт Post", "Zod + TypeScript", "Проверяет id, userId, title и body до передачи данных интерфейсу")
+  }
+}
+
+System_Ext(jsonPlaceholder, "JSONPlaceholder", "Внешний открытый REST API и единственный источник публикаций")
+
+Rel(reader, nginx, "1. Открывает приложение или прямую ссылку", "HTTP(S)")
+Rel(nginx, ui, "2. Доставляет index.html, JavaScript и CSS", "Статические файлы")
+Rel(reader, ui, "3. Взаимодействует после загрузки", "Браузерный UI")
+Rel(navigation, ui, "4. Выбирает страницу по URL")
+Rel(ui, pagination, "5. Читает и изменяет page/limit")
+Rel(pagination, navigation, "6. Обновляет канонический URL")
+Rel(ui, query, "7. Запрашивает список или публикацию")
+Rel(query, dataBoundary, "8. При cache miss или refetch вызывает query function")
+Rel(dataBoundary, jsonPlaceholder, "9. GET /posts?_page&_limit или GET /posts/{id}", "HTTPS / JSON")
+Rel(dataBoundary, validation, "10. Проверяет полученный unknown JSON")
+Rel(validation, query, "11. Возвращает Post или Post[]; ошибка отклоняет запрос")
+Rel(query, ui, "12. Возвращает loading / data / error и кеширует результат")
+
+note right of jsonPlaceholder
+  Ответ списка:
+  • JSON-массив Post;
+  • X-Total-Count — общее количество.
+
+  Ответ деталей:
+  • один Post или HTTP 404.
+end note
+
+note bottom of postsSystem
+  В системе нет собственного backend, базы данных и глобального client store.
+  Ответственность разделена: URL хранит навигацию, TanStack Query — данные API,
+  Zod защищает границу внешнего контракта, Nginx только раздаёт статику.
+end note
+
+SHOW_LEGEND()
+@enduml
