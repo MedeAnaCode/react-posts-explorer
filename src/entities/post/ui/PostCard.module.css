@@ -27,22 +27,24 @@
 }
 
 .content {
-  padding: 1rem var(--card-content-inline, 0);
+  padding: var(--card-content-space, 1rem) var(--card-content-inline, 0);
   text-align: var(--card-text-align, left);
 }
 
 .meta {
-  margin: 0 0 0.85rem;
+  margin: 0 0 0.7rem;
   color: var(--color-accent);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  line-height: 1.4;
+  letter-spacing: 0.065em;
   text-align: var(--card-meta-align, left);
   text-transform: uppercase;
 }
 
 .title {
-  margin: 0;
+  width: min(100%, var(--card-title-width, 100%));
+  margin: 0 auto;
   font-family: Georgia, 'Times New Roman', serif;
   font-size: var(--card-title-size, clamp(1.35rem, 2.3vw, 1.75rem));
   font-weight: 700;
@@ -71,7 +73,7 @@
 .link {
   align-self: var(--card-link-align, flex-start);
   margin-top: auto;
-  padding: 0 var(--card-content-inline, 0) 1rem;
+  padding: 0 var(--card-content-inline, 0) var(--card-link-space, 1rem);
   color: var(--color-accent);
   font-size: 0.82rem;
   font-weight: 900;

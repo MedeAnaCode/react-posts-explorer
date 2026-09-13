@@ -65,9 +65,10 @@ select {
 .eyebrow {
   margin: 0 0 0.75rem;
   color: var(--color-accent);
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  line-height: 1.4;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
 }
 

@@ -13,7 +13,7 @@
 
 .article {
   display: grid;
-  grid-template-columns: minmax(16rem, 0.8fr) minmax(0, 1.2fr);
+  grid-template-columns: minmax(18rem, 0.95fr) minmax(0, 1.05fr);
   column-gap: clamp(2rem, 6vw, 5rem);
   align-items: start;
   border-top: 1px solid var(--color-ink);
@@ -41,10 +41,11 @@
   grid-row: 2;
   margin: 0;
   font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(2.4rem, 5.4vw, 5rem);
+  font-size: clamp(2.15rem, 3.7vw, 3.65rem);
   font-weight: 700;
-  line-height: 0.94;
-  letter-spacing: -0.045em;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
 }
 
 .meta {

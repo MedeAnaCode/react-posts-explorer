@@ -1,29 +1,33 @@
-.page {
-  padding-top: 1rem;
+:global(.page-shell).page {
+  padding-top: 0.75rem;
 }
 
 .toolbar {
   display: flex;
   justify-content: flex-end;
+  padding-bottom: 0.75rem;
   margin-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .select {
   min-width: 8.75rem;
-  min-height: 2.25rem;
-  padding: 0.4rem 2rem 0.4rem 0.7rem;
-  border: 1px solid var(--color-border-strong);
+  min-height: 2rem;
+  padding: 0.35rem 1.8rem 0.35rem 0.15rem;
+  border: 0;
+  border-bottom: 1px solid var(--color-ink);
   border-radius: 0;
   color: var(--color-ink);
-  background: var(--color-surface);
-  font-size: 0.75rem;
+  background-color: transparent;
+  font-size: 0.8125rem;
   font-weight: 700;
+  cursor: pointer;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 2.25rem 1rem;
+  gap: 2rem 1rem;
   margin: 0;
   padding: 0;
   list-style: none;
@@ -35,13 +39,14 @@
 
 .grid > li:first-child {
   grid-column: span 2;
-  --card-title-size: clamp(2rem, 4vw, 3.4rem);
-  --card-title-leading: 1;
+  --card-title-size: clamp(1.8rem, 3.2vw, 2.9rem);
+  --card-title-leading: 1.03;
+  --card-title-width: 18ch;
   --card-image-ratio: 16 / 8.7;
   --card-body-lines: 2;
   --card-meta-align: center;
   --card-text-align: center;
-  --card-content-inline: clamp(1rem, 5vw, 4rem);
+  --card-content-inline: clamp(1rem, 4vw, 3rem);
   --card-link-align: center;
 }
 
@@ -66,17 +71,21 @@
 }
 
 @media (max-width: 41.999rem) {
-  .toolbar {
-    justify-content: flex-start;
-  }
-
   .grid {
     grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .grid > li {
+    --card-image-ratio: 16 / 8.25;
+    --card-body-lines: 2;
+    --card-content-space: 0.75rem;
+    --card-link-space: 0.75rem;
   }
 
   .grid > li:first-child {
     grid-column: auto;
-    --card-title-size: clamp(1.8rem, 9vw, 2.75rem);
+    --card-title-size: clamp(1.75rem, 8vw, 2.35rem);
     --card-content-inline: 0;
   }
 }
