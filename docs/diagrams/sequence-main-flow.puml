@@ -1,0 +1,127 @@
+@startuml
+title Основная логика: список, пагинация и открытие публикации
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam sequenceMessageAlign center
+skinparam responseMessageBelowArrow true
+skinparam ParticipantPadding 18
+skinparam BoxPadding 10
+autonumber
+
+actor "Читатель" as User
+participant "Браузер" as Browser
+participant "React Router" as Router
+participant "PostsPage / PostPage" as Page
+participant "usePostsPagination" as Pagination
+participant "TanStack Query" as Query
+participant "Post API" as PostApi
+participant "HTTP client" as Http
+participant "Vite / Nginx proxy" as Proxy
+participant "Zod schemas" as Zod
+participant "Guardian Content API" as ExternalApi
+
+== Открытие списка ==
+User -> Browser: Открывает / или /posts?page=...&limit=...
+Browser -> Router: Разрешить маршрут
+alt Открыт корневой маршрут /
+  Router -> Browser: replace /posts?page=1&limit=10
+end
+Router -> Page: Отрисовать PostsPage
+Page -> Pagination: Прочитать query-параметры
+Pagination -> Pagination: Проверить page и limit
+alt Параметры отсутствуют или недопустимы
+  Pagination -> Browser: replace каноническим URL\n?page=1&limit=10
+end
+Pagination --> Page: page, limit, setPage(), setLimit()
+Page -> Query: useQuery([posts, list, {page, limit}])
+
+alt В кеше есть свежая страница
+  Query --> Page: PostsPageData из кеша
+else Требуется запрос
+  Query -> PostApi: getPosts(page, limit, AbortSignal)
+  PostApi -> Http: GET /guardian-api/search?page=...\n&page-size=...&order-by=newest&show-fields=...
+  Http -> Proxy: Same-origin GET, Accept: application/json
+  Proxy -> ExternalApi: GET /search + server-side api-key
+  ExternalApi --> Proxy: Guardian response envelope
+  Proxy --> Http: JSON
+  Http --> PostApi: unknown data
+  PostApi -> Zod: postsResponseSchema.safeParse(data)
+  alt Контракт валиден
+    Zod --> PostApi: response.results + response.total
+    PostApi --> Query: { posts, totalCount }
+    Query --> Page: Данные и состояния запроса
+  else Контракт нарушен
+    Zod --> PostApi: Validation error
+    PostApi --> Query: ApiError(kind=validation)
+    Query --> Page: isError + возможность refetch()
+  end
+end
+Page --> Browser: Карточки, пагинация или MessageState
+Browser --> User: Показывает результат
+
+== Смена страницы или лимита ==
+User -> Page: Нажимает «Вперёд/Назад»\nили выбирает limit
+Page -> Pagination: setPage(next) / setLimit(next)
+Pagination -> Browser: Обновить ?page=...&limit=...\n(limit сбрасывает page на 1)
+Browser -> Router: Изменение location
+Router -> Page: Повторная отрисовка
+Page -> Query: Новый query key
+note right of Query
+  keepPreviousData сохраняет прежний список
+  видимым до завершения нового запроса.
+end note
+Query -> PostApi: getPosts(newPage, newLimit)
+PostApi -> Http: GET /guardian-api/search с новой пагинацией
+Http -> Proxy: Same-origin GET
+Proxy -> ExternalApi: GET /search + api-key
+ExternalApi --> Proxy: response.results + response.total
+Proxy --> Http: Следующая порция новостей
+Http --> PostApi: Ответ
+PostApi -> Zod: Проверить контракт
+Zod --> PostApi: Валидированные данные
+PostApi --> Query: PostsPageData
+Query --> Page: Обновить список и доступность кнопок
+Page --> User: Показывает новую страницу
+
+== Открытие публикации и возврат ==
+User -> Page: Нажимает «Читать полностью»
+Page -> Browser: /posts/{id}?page=...&limit=...
+Browser -> Router: Разрешить /posts/:postId
+Router -> Page: Отрисовать PostPage
+Page -> Page: Проверить непустой строковый postId
+Page -> Query: useQuery([posts, detail, postId])
+alt postId некорректен
+  Query --> Page: Запрос отключён
+  Page --> User: «Публикация не найдена»
+else postId корректен
+  Query -> PostApi: getPost(postId, AbortSignal)
+  PostApi -> PostApi: Проверить slash-сегменты и закодировать id
+  PostApi -> Http: GET /guardian-api/{encodedPostId}
+  Http -> Proxy: Same-origin GET
+  Proxy -> ExternalApi: GET /{postId} + api-key
+  alt Ответ 200
+    ExternalApi --> Proxy: response.content
+    Proxy --> Http: Guardian response envelope
+    Http --> PostApi: unknown data
+    PostApi -> Zod: postResponseSchema.safeParse(data)
+    Zod --> PostApi: Валидированный response.content
+    PostApi --> Query: Post
+    Query --> Page: Данные публикации
+    Page --> User: Заголовок и полный текст
+  else Ответ 404
+    ExternalApi --> Proxy: 404
+    Proxy --> Http: 404
+    Http --> Query: ApiError(kind=http, status=404)
+    Query --> Page: isError
+    Page --> User: «Публикация не найдена»
+  end
+end
+User -> Page: Нажимает «Вернуться к списку»
+Page -> Browser: /posts?page=...&limit=...
+note right of Browser
+  Параметры списка перенесены в ссылку,
+  поэтому контекст пагинации сохраняется.
+end note
+
+@enduml

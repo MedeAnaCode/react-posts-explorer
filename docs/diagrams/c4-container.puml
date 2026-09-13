@@ -1,0 +1,24 @@
+@startuml
+!include <C4/C4_Container>
+
+title C4 — уровень 2: контейнеры
+
+LAYOUT_LEFT_RIGHT()
+
+Person(reader, "Читатель", "Работает с приложением в браузере")
+
+System_Boundary(newsSystem, "Лента новостей The Guardian") {
+  Container(webGateway, "Web gateway", "Nginx 1.29 Alpine / Vite", "Раздаёт приложение, поддерживает SPA fallback и /healthz; проксирует /guardian-api и добавляет runtime API key")
+  Container(spa, "Браузерное SPA", "React 19, TypeScript, React Router, TanStack Query, Zod", "Отображает список и детали, хранит навигацию в URL, кеширует запросы и проверяет Guardian response envelope")
+}
+
+System_Ext(guardian, "Guardian Content API", "Внешний REST API новостей")
+
+Rel(reader, webGateway, "Запрашивает приложение и прямые маршруты", "HTTP(S)")
+Rel(webGateway, spa, "Доставляет HTML, JavaScript и CSS", "Статические файлы")
+Rel(reader, spa, "Взаимодействует после загрузки", "Браузерный UI")
+Rel(spa, webGateway, "GET /guardian-api/search и /guardian-api/{id}", "Same-origin JSON")
+Rel(webGateway, guardian, "Проксирует /search и /{id}; добавляет api-key", "HTTPS / JSON")
+
+SHOW_LEGEND()
+@enduml

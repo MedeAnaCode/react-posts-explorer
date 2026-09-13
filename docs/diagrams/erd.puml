@@ -1,0 +1,67 @@
+@startuml
+title ERD — логическая модель внешних данных
+
+hide circle
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam linetype ortho
+skinparam entity {
+  BackgroundColor #F7F9FC
+  BorderColor #355070
+  FontColor #1F2937
+}
+
+entity "GUARDIAN_CONTENT\n<<validated entity>>" as content {
+  * id : string <<PK>>
+  --
+  * webTitle : string
+  * sectionName : string
+  * webPublicationDate : datetime
+  * webUrl : https URL
+}
+
+entity "CONTENT_FIELDS\n<<optional nested object>>" as fields {
+  byline : string [0..1]
+  bodyText : string [0..1]
+  thumbnail : https URL [0..1]
+}
+
+entity "GUARDIAN_SEARCH_RESPONSE\n<<external envelope>>" as searchResponse {
+  * status : "ok"
+  --
+  * total : integer
+  * results : GuardianContent[0..*]
+}
+
+entity "POSTS_PAGE_DATA\n<<response DTO>>" as pageData {
+  * posts : GuardianContent[0..*]
+  --
+  * totalCount : integer
+}
+
+content ||--o| fields : "содержит"
+searchResponse ||..o{ content : "response.results"
+pageData ||..o{ content : "агрегирует"
+searchResponse ||..|| pageData : "преобразуется в"
+
+note right of content
+  Проверка Zod:
+  • id — непустая строка со slash-сегментами;
+  • webUrl и thumbnail используют HTTPS;
+  • webUrl ведёт на домен The Guardian;
+  • обязательные metadata — непустые строки.
+end note
+
+note bottom of pageData
+  page и limit — параметры запроса и часть query key,
+  но не поля сохраняемой сущности.
+  totalCount извлекается из response.total.
+end note
+
+legend left
+  В проекте нет собственной базы данных.
+  Диаграмма описывает логический контракт Guardian Content API
+  и объект, который API-слой возвращает интерфейсу.
+endlegend
+
+@enduml

@@ -1,0 +1,16 @@
+@startuml
+!include <C4/C4_Context>
+
+title C4 — уровень 1: контекст системы
+
+LAYOUT_LEFT_RIGHT()
+
+Person(reader, "Читатель", "Просматривает ленту новостей и открывает отдельные материалы")
+System(newsShowcase, "Лента новостей The Guardian", "Одностраничное веб-приложение с same-origin API proxy")
+System_Ext(guardian, "Guardian Content API", "Внешний REST API; источник новостей и общего количества")
+
+Rel(reader, newsShowcase, "Просматривает список, меняет страницу и открывает новость", "HTTPS / браузер")
+Rel(newsShowcase, guardian, "Читает список и отдельные новости через серверный proxy; API key не попадает в браузер", "HTTPS / JSON")
+
+SHOW_LEGEND()
+@enduml

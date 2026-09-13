@@ -24,6 +24,21 @@ const guardianUrlSchema = httpsUrlSchema.refine((value) => {
   );
 }, 'URL должен вести на The Guardian.');
 
+function emptyStringToUndefined(value: unknown) {
+  return typeof value === 'string' && value.trim().length === 0
+    ? undefined
+    : value;
+}
+
+const optionalTextSchema = z.preprocess(
+  emptyStringToUndefined,
+  z.string().min(1).optional(),
+);
+const optionalHttpsUrlSchema = z.preprocess(
+  emptyStringToUndefined,
+  httpsUrlSchema.optional(),
+);
+
 export const postSchema = z.object({
   id: z.string().min(1),
   webTitle: z.string().min(1),
@@ -32,9 +47,9 @@ export const postSchema = z.object({
   webUrl: guardianUrlSchema,
   fields: z
     .object({
-      byline: z.string().min(1).optional(),
-      bodyText: z.string().min(1).optional(),
-      thumbnail: httpsUrlSchema.optional(),
+      byline: optionalTextSchema,
+      bodyText: optionalTextSchema,
+      thumbnail: optionalHttpsUrlSchema,
     })
     .optional(),
 });

@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from 'react-router-dom';
 
-import { postQueryOptions } from '../entities/post';
+import { isValidGuardianPostId, postQueryOptions } from '../entities/post';
 import {
   createPostsSearchParams,
   parsePostsSearchParams,
@@ -11,7 +11,9 @@ import { MessageState } from '../shared/ui';
 import styles from './PostPage.module.css';
 
 function parsePostId(value: string | undefined) {
-  return value?.trim() || null;
+  const postId = value?.trim();
+
+  return postId && isValidGuardianPostId(postId) ? postId : null;
 }
 
 export function PostPage() {

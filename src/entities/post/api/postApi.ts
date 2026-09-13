@@ -11,6 +11,17 @@ type GetPostsParams = {
   signal?: AbortSignal;
 };
 
+export function isValidGuardianPostId(postId: string) {
+  const postIdSegments = postId.split('/');
+
+  return (
+    postId.length > 0 &&
+    postIdSegments.every(
+      (segment) => segment.length > 0 && segment !== '.' && segment !== '..',
+    )
+  );
+}
+
 export async function getPosts({
   page,
   limit,
@@ -39,18 +50,13 @@ export async function getPosts({
 }
 
 export async function getPost(postId: string, signal?: AbortSignal) {
-  const postIdSegments = postId.split('/');
-
-  if (
-    postIdSegments.some(
-      (segment) => segment.length === 0 || segment === '.' || segment === '..',
-    )
-  ) {
+  if (!isValidGuardianPostId(postId)) {
     throw new ApiError('Идентификатор новости имеет неверный формат.', {
       kind: 'validation',
     });
   }
 
+  const postIdSegments = postId.split('/');
   const encodedPostId = postIdSegments.map(encodeURIComponent).join('/');
   const params = new URLSearchParams({
     'show-fields': 'byline,bodyText,thumbnail',

@@ -94,13 +94,14 @@ docs: уточнить запуск контейнера
 
 Workflow `.github/workflows/ci.yml` работает в трёх режимах:
 
-1. `push` в любую ветку запускает `Lint (non-blocking)`. Ошибки ESLint видны в логе и GitHub Summary, но не делают workflow красным.
-2. `pull_request` в `master` запускает блокирующие `Unit tests`, `End-to-end tests` и `Production readiness`.
-3. `workflow_dispatch` вручную запускает тот же полный набор перед production-релизом.
+1. `push` в любую ветку запускает `Lint (non-blocking)`. Ошибки ESLint видны в логе и GitHub Summary, но не делают быстрый job красным.
+2. Push в `master` или `develop` дополнительно запускает полный набор блокирующих проверок, чтобы прямые изменения защищённых веток не оставались без тестов.
+3. `pull_request` в `master` запускает блокирующие `Unit tests`, `End-to-end tests` и `Production readiness`; последний job включает ESLint.
+4. `workflow_dispatch` вручную запускает тот же полный набор перед production-релизом.
 
 Итоговый job `PR gate` зависит от всех блокирующих проверок. В настройках защиты `master` его нужно выбрать как обязательный status check; после этого GitHub не позволит объединить pull request с упавшими unit-, end-to-end или production-проверками.
 
-`Production readiness` проверяет форматирование, TypeScript и runtime-зависимости, собирает реальный Docker-образ и запускает его для smoke-теста `/healthz`, прямого SPA-маршрута и HTTP security headers. Это выявляет проблемы именно в поставляемом образе, а не только в dev-сервере.
+`Production readiness` проверяет форматирование, TypeScript, ESLint и runtime-зависимости, собирает реальный Docker-образ и запускает его с тестовым runtime key. Smoke-тест контролирует `/healthz`, прямой SPA-маршрут со строковым Guardian ID, сгенерированную Nginx proxy-конфигурацию, отсутствие имени секрета в клиентском bundle и HTTP security headers для HTML и ассетов. Внешний Guardian API при этом не вызывается, поэтому тест остаётся детерминированным.
 
 ## Стратегия тестирования
 

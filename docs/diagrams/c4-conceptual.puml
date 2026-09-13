@@ -1,0 +1,56 @@
+@startuml
+!include <C4/C4_Component>
+
+title Лента новостей The Guardian — единая концептуальная C4-like схема
+
+LAYOUT_LEFT_RIGHT()
+
+Person(reader, "Читатель", "Просматривает ленту, меняет страницу и открывает новость")
+
+System_Boundary(newsSystem, "Система «Лента новостей The Guardian»") {
+  Container(gateway, "Web gateway", "Nginx 1.29 Alpine / Vite", "Раздаёт приложение, поддерживает SPA-маршруты и /healthz; проксирует /guardian-api и добавляет runtime API key")
+
+  Container_Boundary(spa, "Браузерное SPA · React 19 + TypeScript") {
+    Component(navigation, "Навигация и состояние URL", "React Router", "Маршруты /posts и /posts/:postId; page, limit и postId являются воспроизводимым состоянием навигации")
+    Component(ui, "Страницы и UI", "PostsPage, PostPage, PostCard, MessageState", "Показывает список, детали, загрузку, пустой результат, 404 и контролируемые ошибки")
+    Component(pagination, "Пагинация", "usePostsPagination", "Проверяет page/limit, приводит URL к каноническому виду и сбрасывает page при смене limit")
+    Component(query, "Серверное состояние", "TanStack Query", "Ключи кеша включают page/limit или postId; управляет загрузкой, кешем, refetch и AbortSignal")
+    Component(dataBoundary, "Граница данных", "postQueries + postApi + Fetch API", "Формирует Guardian query к same-origin proxy, читает response.total/results/content и классифицирует ошибки")
+    Component(validation, "Контракт новости", "Zod + TypeScript", "Проверяет строковый id, Guardian metadata, fields и response envelope")
+  }
+}
+
+System_Ext(guardian, "Guardian Content API", "Внешний REST API и единственный источник новостей")
+
+Rel(reader, gateway, "1. Открывает приложение или прямую ссылку", "HTTP(S)")
+Rel(gateway, ui, "2. Доставляет index.html, JavaScript и CSS", "Статические файлы")
+Rel(reader, ui, "3. Взаимодействует после загрузки", "Браузерный UI")
+Rel(navigation, ui, "4. Выбирает страницу по URL")
+Rel(ui, pagination, "5. Читает и изменяет page/limit")
+Rel(pagination, navigation, "6. Обновляет канонический URL")
+Rel(ui, query, "7. Запрашивает список или новость")
+Rel(query, dataBoundary, "8. При cache miss или refetch вызывает query function")
+Rel(dataBoundary, gateway, "9. GET /guardian-api/search или /guardian-api/{id}", "Same-origin JSON")
+Rel(gateway, guardian, "10. Проксирует /search или /{id}; добавляет api-key", "HTTPS / JSON")
+Rel(guardian, gateway, "11. Возвращает Guardian response envelope", "JSON")
+Rel(dataBoundary, validation, "12. Проверяет полученный unknown JSON")
+Rel(validation, query, "13. Возвращает Post или Post[]; ошибка отклоняет запрос")
+Rel(query, ui, "14. Возвращает loading / data / error и кеширует результат")
+
+note right of guardian
+  Ответ списка:
+  • response.results — новости;
+  • response.total — общее количество.
+
+  Ответ деталей:
+  • response.content или HTTP 404.
+end note
+
+note bottom of newsSystem
+  В системе нет собственного прикладного backend, базы данных и глобального client store.
+  Ответственность разделена: URL хранит навигацию, TanStack Query — данные API,
+  Zod защищает границу внешнего контракта, web gateway изолирует API key.
+end note
+
+SHOW_LEGEND()
+@enduml

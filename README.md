@@ -93,12 +93,12 @@ npm run test:e2e
 
 Workflow `.github/workflows/ci.yml` разделяет быстрый сигнал для каждого коммита и обязательные проверки pull request:
 
-- при каждом `push` ESLint запускается как неблокирующая проверка и оставляет предупреждение в GitHub Summary при ошибках;
-- каждый pull request в `master` параллельно запускает unit- и интеграционные тесты Vitest с покрытием, end-to-end тесты Playwright и проверку готовности production-образа;
+- при каждом `push` ESLint запускается как быстрый неблокирующий сигнал и оставляет предупреждение в GitHub Summary при ошибках;
+- push в `master` или `develop`, а также каждый pull request в `master`, параллельно запускает unit- и интеграционные тесты Vitest с покрытием, end-to-end тесты Playwright и проверку готовности production-образа;
 - `PR gate` завершается успешно только после всех трёх блокирующих jobs; этот статус нужно добавить в required status checks правила защиты ветки `master`;
 - тот же полный набор можно запустить вручную через `workflow_dispatch` перед релизом.
 
-Production-проверка контролирует форматирование и типы, аудит высоких/критических уязвимостей runtime-зависимостей, сборку Docker-образа, health endpoint, SPA fallback прямого маршрута и основные HTTP security headers. Отчёты покрытия и Playwright сохраняются в artifacts на 7 дней.
+Production-проверка контролирует форматирование, типы и ESLint, аудит высоких/критических уязвимостей runtime-зависимостей, отсутствие runtime-секрета в клиентском bundle, сборку Docker-образа, подстановку proxy-конфигурации, health endpoint, SPA fallback прямого Guardian-маршрута и HTTP security headers для HTML и ассетов. Отчёты покрытия и Playwright сохраняются в artifacts на 7 дней.
 
 ## Структура репозитория
 

@@ -86,6 +86,14 @@ describe('маршрутизация приложения', () => {
     ).toBeInTheDocument();
   });
 
+  it('не отправляет запрос для небезопасного Guardian id', () => {
+    renderRouter('/posts/world%2F..%2Fescape?page=1&limit=10');
+
+    expect(
+      screen.getByRole('heading', { name: 'Новость не найдена' }),
+    ).toBeInTheDocument();
+  });
+
   it('позволяет повторить запрос после ошибки списка', async () => {
     const user = userEvent.setup();
     let attempts = 0;

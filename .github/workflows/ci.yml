@@ -57,7 +57,10 @@ jobs:
 
   unit-tests:
     name: Unit tests
-    if: github.event_name != 'push'
+    if: >-
+      github.event_name != 'push' ||
+      github.ref == 'refs/heads/master' ||
+      github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -88,7 +91,10 @@ jobs:
 
   end-to-end-tests:
     name: End-to-end tests
-    if: github.event_name != 'push'
+    if: >-
+      github.event_name != 'push' ||
+      github.ref == 'refs/heads/master' ||
+      github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -124,7 +130,10 @@ jobs:
 
   production-readiness:
     name: Production readiness
-    if: github.event_name != 'push'
+    if: >-
+      github.event_name != 'push' ||
+      github.ref == 'refs/heads/master' ||
+      github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -147,6 +156,9 @@ jobs:
       - name: Check TypeScript
         run: npm run typecheck
 
+      - name: Check ESLint
+        run: npm run lint
+
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=high
 
@@ -163,7 +175,7 @@ jobs:
           }
           trap cleanup EXIT
 
-          docker run --detach --name "$container_name" --publish 127.0.0.1::80 "$IMAGE_TAG"
+          docker run --detach --name "$container_name" --env GUARDIAN_API_KEY=ci-smoke-test-key --publish 127.0.0.1::80 "$IMAGE_TAG"
           host_port="$(docker port "$container_name" 80/tcp)"
           host_port="${host_port##*:}"
           base_url="http://127.0.0.1:${host_port}"
@@ -182,10 +194,28 @@ jobs:
             exit 1
           fi
 
-          curl --fail --silent --show-error "$base_url/posts/1" | grep --fixed-strings '<div id="root"></div>'
+          rendered_config="$(docker exec "$container_name" nginx -T 2>&1)"
+          printf '%s\n' "$rendered_config" | grep --fixed-strings 'location /guardian-api/'
+          printf '%s\n' "$rendered_config" | grep --fixed-strings 'api-key=ci-smoke-test-key'
+
+          if grep --recursive --fixed-strings 'GUARDIAN_API_KEY' dist/; then
+            echo "::error::Runtime secret name leaked into the client bundle."
+            exit 1
+          fi
+
+          curl --fail --silent --show-error "$base_url/posts/world%2F2026%2Fsep%2F13%2Fci-smoke" | grep --fixed-strings '<div id="root"></div>'
           curl --fail --silent --show-error --head "$base_url/" | grep --ignore-case '^x-content-type-options: nosniff'
           curl --fail --silent --show-error --head "$base_url/" | grep --ignore-case '^x-frame-options: SAMEORIGIN'
           curl --fail --silent --show-error --head "$base_url/" | grep --ignore-case '^referrer-policy: strict-origin-when-cross-origin'
+
+          asset_path="$(curl --fail --silent --show-error "$base_url/" | grep --only-matching --extended-regexp '/assets/[^"]+\.js' | head --lines=1)"
+          test -n "$asset_path"
+          curl --fail --silent --show-error --head "$base_url$asset_path" | grep --ignore-case '^x-content-type-options: nosniff'
+          curl --fail --silent --show-error --head "$base_url$asset_path" | grep --ignore-case '^x-frame-options: SAMEORIGIN'
+          curl --fail --silent --show-error --head "$base_url$asset_path" | grep --ignore-case '^referrer-policy: strict-origin-when-cross-origin'
+
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' "$base_url/guardian-api/search?api-key=attacker")" = "400"
+          test "$(curl --silent --output /dev/null --write-out '%{http_code}' --request POST "$base_url/guardian-api/search")" = "403"
 
   pull-request-gate:
     name: PR gate

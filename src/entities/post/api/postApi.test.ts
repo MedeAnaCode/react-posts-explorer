@@ -74,6 +74,33 @@ describe('API новостей The Guardian', () => {
     await expect(getPost(mockPosts[0].id)).resolves.toEqual(mockPosts[0]);
   });
 
+  it('нормализует пустые опциональные Guardian fields', async () => {
+    server.use(
+      http.get('*/guardian-api/search', () =>
+        HttpResponse.json({
+          response: {
+            status: 'ok',
+            total: 1,
+            results: [
+              {
+                ...mockPosts[0],
+                fields: { byline: ' ', bodyText: '', thumbnail: '' },
+              },
+            ],
+          },
+        }),
+      ),
+    );
+
+    const result = await getPosts({ page: 1, limit: 10 });
+
+    expect(result.posts[0].fields).toEqual({
+      byline: undefined,
+      bodyText: undefined,
+      thumbnail: undefined,
+    });
+  });
+
   it('отклоняет небезопасный Guardian id до сетевого запроса', async () => {
     const fetchSpy = vi.spyOn(globalThis, 'fetch');
 

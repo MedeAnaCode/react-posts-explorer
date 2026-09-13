@@ -1,4 +1,4 @@
-export { getPost, getPosts } from './api/postApi';
+export { getPost, getPosts, isValidGuardianPostId } from './api/postApi';
 export {
   postKeys,
   postQueryOptions,
