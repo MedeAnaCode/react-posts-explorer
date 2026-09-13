@@ -24,7 +24,7 @@ docker compose version
 
 ```bash
 npm ci
-copy .env.example .env
+cp .env.example .env
 npx playwright install chromium
 ```
 

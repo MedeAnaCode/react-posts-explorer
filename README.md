@@ -29,7 +29,7 @@
 
 ```bash
 npm ci
-copy .env.example .env
+cp .env.example .env
 npm run dev
 ```
 
@@ -107,8 +107,9 @@ npm run test:e2e
 │   ├── shared/
 │   └── test/
 ├── Dockerfile
-├── compose.yaml
-├── nginx.conf
+├── docker-compose.yml
+├── nginx/
+│   └── default.conf
 └── package.json
 ```
 
