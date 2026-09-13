@@ -26,33 +26,23 @@ export function PostsPage() {
   const query = useQuery(postsQueryOptions(page, limit));
 
   return (
-    <main className="page-shell">
-      <header className={styles.header}>
-        <div>
-          <p className="eyebrow">Новости / The Guardian</p>
-          <h1 className={styles.heading}>Последние новости</h1>
-          <p className={styles.lead}>
-            Свежие материалы редакции с авторами, иллюстрациями и полным текстом
-            на отдельной странице.
-          </p>
-        </div>
-        <label className={styles.limitLabel}>
-          Показывать на странице
-          <select
-            className={styles.select}
-            value={limit}
-            onChange={(event) =>
-              setLimit(Number(event.target.value) as PostsLimit)
-            }
-          >
-            {AVAILABLE_LIMITS.map((value) => (
-              <option key={value} value={value}>
-                {value} новостей
-              </option>
-            ))}
-          </select>
-        </label>
-      </header>
+    <main className={`page-shell ${styles.page}`}>
+      <div className={styles.toolbar}>
+        <select
+          className={styles.select}
+          aria-label="Количество новостей на странице"
+          value={limit}
+          onChange={(event) =>
+            setLimit(Number(event.target.value) as PostsLimit)
+          }
+        >
+          {AVAILABLE_LIMITS.map((value) => (
+            <option key={value} value={value}>
+              {value} новостей
+            </option>
+          ))}
+        </select>
+      </div>
 
       {query.isPending ? (
         <MessageState

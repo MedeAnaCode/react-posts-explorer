@@ -1,58 +1,48 @@
-.header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  gap: 2rem;
-  margin-bottom: clamp(2rem, 6vw, 4rem);
+.page {
+  padding-top: 1rem;
 }
 
-.heading {
-  max-width: 12ch;
-  margin: 0;
-  font-family: Georgia, 'Times New Roman', serif;
-  font-size: clamp(2.75rem, 8vw, 6.5rem);
-  font-weight: 500;
-  line-height: 0.88;
-  letter-spacing: -0.055em;
-}
-
-.lead {
-  max-width: 35rem;
-  margin: 1.5rem 0 0;
-  color: var(--color-muted);
-  font-size: clamp(1rem, 2vw, 1.2rem);
-  line-height: 1.65;
-}
-
-.limitLabel {
-  display: grid;
-  gap: 0.45rem;
-  color: var(--color-muted);
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+.toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
 }
 
 .select {
-  min-width: 10rem;
-  min-height: 2.75rem;
-  padding: 0.55rem 2.4rem 0.55rem 0.8rem;
+  min-width: 8.75rem;
+  min-height: 2.25rem;
+  padding: 0.4rem 2rem 0.4rem 0.7rem;
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-small);
+  border-radius: 0;
   color: var(--color-ink);
   background: var(--color-surface);
-  font: inherit;
+  font-size: 0.75rem;
   font-weight: 700;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2.25rem 1rem;
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.grid > li {
+  min-width: 0;
+}
+
+.grid > li:first-child {
+  grid-column: span 2;
+  --card-title-size: clamp(2rem, 4vw, 3.4rem);
+  --card-title-leading: 1;
+  --card-image-ratio: 16 / 8.7;
+  --card-body-lines: 2;
+  --card-meta-align: center;
+  --card-text-align: center;
+  --card-content-inline: clamp(1rem, 5vw, 4rem);
+  --card-link-align: center;
 }
 
 .updating {
@@ -60,17 +50,24 @@
   transition: opacity 160ms ease;
 }
 
-@media (max-width: 45rem) {
-  .header {
-    grid-template-columns: 1fr;
-    align-items: start;
+@media (max-width: 62rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
 
-  .limitLabel {
-    justify-self: start;
+@media (max-width: 42rem) {
+  .toolbar {
+    justify-content: flex-start;
   }
 
   .grid {
     grid-template-columns: 1fr;
+  }
+
+  .grid > li:first-child {
+    grid-column: auto;
+    --card-title-size: clamp(1.8rem, 9vw, 2.75rem);
+    --card-content-inline: 0;
   }
 }

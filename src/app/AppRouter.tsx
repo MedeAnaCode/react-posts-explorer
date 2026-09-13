@@ -3,10 +3,12 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { NotFoundPage } from '../pages/NotFoundPage';
 import { PostPage } from '../pages/PostPage';
 import { PostsPage } from '../pages/PostsPage';
+import { SiteHeader } from '../shared/ui';
 
 export function AppRouter() {
   return (
     <BrowserRouter>
+      <SiteHeader />
       <Routes>
         <Route
           path="/"

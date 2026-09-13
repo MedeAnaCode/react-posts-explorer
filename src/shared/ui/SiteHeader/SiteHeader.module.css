@@ -1,0 +1,49 @@
+.header {
+  width: min(76rem, calc(100% - 2rem));
+  margin: 0 auto;
+  padding-block: 0.75rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.masthead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.descriptor,
+.date {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+}
+
+.descriptor {
+  color: var(--color-muted);
+  text-decoration: none;
+}
+
+.descriptor:hover {
+  color: var(--color-accent);
+}
+
+.date {
+  text-align: right;
+}
+
+@media (max-width: 42rem) {
+  .masthead {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+
+  .date {
+    text-align: left;
+  }
+}

@@ -30,8 +30,11 @@ describe('маршрутизация приложения', () => {
     renderRouter('/');
 
     expect(
-      await screen.findByRole('heading', { name: 'Последние новости' }),
+      await screen.findByText('Независимый обзор материалов The Guardian'),
     ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('heading', { name: 'Последние новости' }),
+    ).not.toBeInTheDocument();
     expect(window.location.search).toBe('?page=1&limit=10');
   });
 
@@ -43,7 +46,9 @@ describe('маршрутизация приложения', () => {
     expect(window.location.search).toBe('?page=1&limit=10');
 
     await user.selectOptions(
-      screen.getByRole('combobox', { name: 'Показывать на странице' }),
+      screen.getByRole('combobox', {
+        name: 'Количество новостей на странице',
+      }),
       '20',
     );
     expect(window.location.search).toBe('?page=1&limit=20');

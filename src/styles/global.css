@@ -8,19 +8,19 @@
     'Segoe UI',
     sans-serif;
   --color-ink: #15221f;
-  --color-muted: #5c6965;
-  --color-accent: #087765;
-  --color-accent-dark: #075849;
-  --color-accent-soft: #e2f1ec;
-  --color-surface: #fffefa;
-  --color-border: #d9ddd6;
-  --color-border-strong: #aeb9b3;
-  --radius: 1.15rem;
-  --radius-small: 0.65rem;
-  --shadow-small: 0 0.35rem 1rem rgb(35 54 49 / 6%);
-  --shadow: 0 1.25rem 2.5rem rgb(35 54 49 / 12%);
+  --color-muted: #68706d;
+  --color-accent: #13745d;
+  --color-accent-dark: #0b5745;
+  --color-accent-soft: #e7f0ed;
+  --color-surface: #ffffff;
+  --color-border: #daddd9;
+  --color-border-strong: #8e9692;
+  --radius: 0;
+  --radius-small: 0;
+  --shadow-small: none;
+  --shadow: none;
   color: var(--color-ink);
-  background: #f2f0e8;
+  background: var(--color-surface);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
 }
@@ -33,13 +33,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background:
-    radial-gradient(
-      circle at 10% 0%,
-      rgb(210 233 222 / 60%),
-      transparent 34rem
-    ),
-    #f2f0e8;
+  background: var(--color-surface);
 }
 
 a {
@@ -63,16 +57,21 @@ select {
 }
 
 .page-shell {
-  width: min(70rem, calc(100% - 2rem));
+  width: min(76rem, calc(100% - 2rem));
   margin: 0 auto;
-  padding: clamp(2.5rem, 8vw, 6.5rem) 0;
+  padding: clamp(2rem, 5vw, 4.5rem) 0;
 }
 
 .eyebrow {
-  margin: 0 0 1rem;
-  color: #176958;
+  margin: 0 0 0.75rem;
+  color: var(--color-accent);
   font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+::selection {
+  color: white;
+  background: var(--color-accent);
 }
