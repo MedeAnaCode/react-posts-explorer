@@ -5,7 +5,9 @@ coverage/
 playwright-report/
 test-results/
 .env
-.env.local
+.env.*
+!.env.example
+.agents/
 .tmp/
 .worktrees/
 contexts/

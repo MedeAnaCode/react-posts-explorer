@@ -31,10 +31,10 @@ export async function getPosts({
     page: String(page),
     'page-size': String(limit),
     'order-by': 'newest',
-    'show-fields': 'byline,bodyText,thumbnail',
+    'show-fields': 'byline,trailText,thumbnail',
   });
   const response = await getJson('/search', { params, signal });
-  const result = postsResponseSchema.safeParse(response.data);
+  const result = postsResponseSchema.safeParse(response);
 
   if (!result.success) {
     throw new ApiError('Список новостей имеет неверный формат.', {
@@ -46,6 +46,8 @@ export async function getPosts({
   return {
     posts: result.data.response.results,
     totalCount: result.data.response.total,
+    page,
+    limit,
   };
 }
 
@@ -62,7 +64,7 @@ export async function getPost(postId: string, signal?: AbortSignal) {
     'show-fields': 'byline,bodyText,thumbnail',
   });
   const response = await getJson(`/${encodedPostId}`, { params, signal });
-  const result = postResponseSchema.safeParse(response.data);
+  const result = postResponseSchema.safeParse(response);
 
   if (!result.success) {
     throw new ApiError('Новость имеет неверный формат.', {

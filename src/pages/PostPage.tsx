@@ -6,8 +6,8 @@ import {
   createPostsSearchParams,
   parsePostsSearchParams,
 } from '../features/posts-pagination';
-import { isApiError } from '../shared/api';
-import { MessageState } from '../shared/ui';
+import { getApiErrorDescription, isApiError } from '../shared/api';
+import { MessageState, RefreshNotice } from '../shared/ui';
 import styles from './PostPage.module.css';
 
 function parsePostId(value: string | undefined) {
@@ -27,7 +27,10 @@ export function PostPage() {
   const query = useQuery(postQueryOptions(postId ?? ''));
   const isNotFound =
     postId === null ||
-    (query.isError && isApiError(query.error) && query.error.status === 404);
+    (!query.data &&
+      query.isError &&
+      isApiError(query.error) &&
+      query.error.status === 404);
 
   const backLink = (
     <Link className={styles.backLink} to={`/posts?${listSearch.toString()}`}>
@@ -38,6 +41,13 @@ export function PostPage() {
   return (
     <main className="page-shell">
       {backLink}
+      {query.data && query.isError ? (
+        <RefreshNotice
+          description={getApiErrorDescription(query.error)}
+          busy={query.isFetching}
+          onRetry={() => void query.refetch()}
+        />
+      ) : null}
       {isNotFound ? (
         <MessageState
           title="Новость не найдена"
@@ -49,10 +59,10 @@ export function PostPage() {
           description="Загружаем полный текст."
           busy
         />
-      ) : query.isError ? (
+      ) : !query.data ? (
         <MessageState
           title="Не получилось открыть"
-          description="Проверьте подключение и повторите запрос."
+          description={getApiErrorDescription(query.error)}
           actionLabel="Повторить запрос"
           onAction={() => void query.refetch()}
         />
@@ -65,11 +75,17 @@ export function PostPage() {
               alt=""
             />
           ) : null}
-          <p className="eyebrow">{query.data.sectionName}</p>
-          <h1 className={styles.title}>{query.data.webTitle}</h1>
+          <p className="eyebrow" lang="en">
+            {query.data.sectionName}
+          </p>
+          <h1 className={styles.title} lang="en">
+            {query.data.webTitle}
+          </h1>
           <div className={styles.meta}>
             {query.data.fields?.byline ? (
-              <p className={styles.byline}>{query.data.fields.byline}</p>
+              <p className={styles.byline} lang="en">
+                {query.data.fields.byline}
+              </p>
             ) : null}
             <time dateTime={query.data.webPublicationDate}>
               {new Intl.DateTimeFormat('ru-RU', {
@@ -78,7 +94,10 @@ export function PostPage() {
               }).format(new Date(query.data.webPublicationDate))}
             </time>
           </div>
-          <p className={styles.body}>
+          <p
+            className={styles.body}
+            lang={query.data.fields?.bodyText ? 'en' : 'ru'}
+          >
             {query.data.fields?.bodyText ??
               'Полный текст этой новости недоступен в API.'}
           </p>

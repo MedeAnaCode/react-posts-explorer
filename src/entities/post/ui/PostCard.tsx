@@ -25,15 +25,19 @@ export function PostCard({ post, listSearch }: PostCardProps) {
       ) : null}
       <div className={styles.content}>
         <p className={styles.meta}>
-          {post.sectionName} ·{' '}
+          <span lang="en">{post.sectionName}</span> ·{' '}
           <time dateTime={post.webPublicationDate}>{publicationDate}</time>
         </p>
-        <h2 className={styles.title}>{post.webTitle}</h2>
+        <h2 className={styles.title} lang="en">
+          {post.webTitle}
+        </h2>
         {post.fields?.byline ? (
-          <p className={styles.byline}>{post.fields.byline}</p>
+          <p className={styles.byline} lang="en">
+            {post.fields.byline}
+          </p>
         ) : null}
-        <p className={styles.body}>
-          {post.fields?.bodyText ??
+        <p className={styles.body} lang={post.fields?.trailText ? 'en' : 'ru'}>
+          {post.fields?.trailText ??
             'Полный текст доступен на странице новости.'}
         </p>
       </div>

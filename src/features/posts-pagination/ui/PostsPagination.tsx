@@ -3,8 +3,7 @@ import styles from './PostsPagination.module.css';
 type PostsPaginationProps = {
   page: number;
   limit: number;
-  itemCount: number;
-  totalCount: number | null;
+  totalCount: number;
   disabled?: boolean;
   onPageChange: (page: number) => void;
 };
@@ -12,15 +11,12 @@ type PostsPaginationProps = {
 export function PostsPagination({
   page,
   limit,
-  itemCount,
   totalCount,
   disabled = false,
   onPageChange,
 }: PostsPaginationProps) {
-  const totalPages = totalCount === null ? null : Math.ceil(totalCount / limit);
-  // Без общего количества следующая страница остаётся доступной после полного ответа.
-  const hasNextPage =
-    totalPages === null ? itemCount === limit : page < totalPages;
+  const totalPages = Math.max(1, Math.ceil(totalCount / limit));
+  const hasNextPage = page < totalPages;
 
   return (
     <nav className={styles.pagination} aria-label="Постраничная навигация">
@@ -33,8 +29,7 @@ export function PostsPagination({
         ← Назад
       </button>
       <p className={styles.status} aria-live="polite">
-        Страница {page}
-        {totalPages === null ? '' : ` из ${Math.max(totalPages, 1)}`}
+        Страница {page} из {totalPages}
       </p>
       <button
         type="button"

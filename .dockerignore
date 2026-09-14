@@ -1,5 +1,6 @@
 .git
 .github
+.agents
 .pnpm-store
 .tmp
 .worktrees

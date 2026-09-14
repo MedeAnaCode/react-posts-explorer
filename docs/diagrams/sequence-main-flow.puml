@@ -49,7 +49,7 @@ else Требуется запрос
   PostApi -> Zod: postsResponseSchema.safeParse(data)
   alt Контракт валиден
     Zod --> PostApi: response.results + response.total
-    PostApi --> Query: { posts, totalCount }
+    PostApi --> Query: { posts, totalCount, page, limit }
     Query --> Page: Данные и состояния запроса
   else Контракт нарушен
     Zod --> PostApi: Validation error
@@ -70,6 +70,7 @@ Page -> Query: Новый query key
 note right of Query
   keepPreviousData сохраняет прежний список
   видимым до завершения нового запроса.
+  Ссылки карточек сохраняют page/limit этих данных.
 end note
 Query -> PostApi: getPosts(newPage, newLimit)
 PostApi -> Http: GET /guardian-api/search с новой пагинацией
@@ -109,7 +110,7 @@ else postId корректен
     PostApi --> Query: Post
     Query --> Page: Данные публикации
     Page --> User: Заголовок и полный текст
-  else Ответ 404
+  else Ответ 404 без кешированных данных
     ExternalApi --> Proxy: 404
     Proxy --> Http: 404
     Http --> Query: ApiError(kind=http, status=404)
@@ -117,6 +118,10 @@ else postId корректен
     Page --> User: «Публикация не найдена»
   end
 end
+note right of Query
+  При ошибке фонового обновления кешированные
+  список или статья остаются видимыми с RefreshNotice.
+end note
 User -> Page: Нажимает «Вернуться к списку»
 Page -> Browser: /posts?page=...&limit=...
 note right of Browser

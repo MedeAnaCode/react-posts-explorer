@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 
+import { shouldRetryRequest } from '../shared/api';
 import { AppRouter } from './AppRouter';
 
 export function App() {
@@ -9,7 +10,7 @@ export function App() {
       new QueryClient({
         defaultOptions: {
           queries: {
-            retry: 1,
+            retry: shouldRetryRequest,
             staleTime: 30_000,
           },
         },

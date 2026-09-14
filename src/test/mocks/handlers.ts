@@ -11,6 +11,7 @@ export const mockPosts = Array.from({ length: 20 }, (_, index) => {
     webUrl: `https://www.theguardian.com/world/2026/sep/${String(number).padStart(2, '0')}/test-news-${number}`,
     fields: {
       byline: `Автор ${number}`,
+      trailText: `Краткий анонс тестовой новости ${number}.`,
       bodyText: `Полный текст тестовой новости ${number}.`,
       thumbnail: `https://media.guim.co.uk/test-news-${number}.jpg`,
     },

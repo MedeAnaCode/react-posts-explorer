@@ -5,5 +5,5 @@ services:
     environment:
       GUARDIAN_API_KEY: ${GUARDIAN_API_KEY:?GUARDIAN_API_KEY is required}
     ports:
-      - '${APP_PORT:-8080}:80'
+      - '127.0.0.1:${APP_PORT:-8080}:80'
     restart: unless-stopped

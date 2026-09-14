@@ -22,6 +22,15 @@ export default defineConfig({
           : undefined,
       },
     },
+    {
+      name: 'mobile-chromium',
+      use: {
+        ...devices['Pixel 7'],
+        launchOptions: chromiumExecutablePath
+          ? { executablePath: chromiumExecutablePath }
+          : undefined,
+      },
+    },
   ],
   webServer: {
     command: 'npm run build && npm run preview -- --host 127.0.0.1',

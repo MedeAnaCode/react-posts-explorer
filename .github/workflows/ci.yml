@@ -3,8 +3,7 @@ name: CI
 on:
   push:
   pull_request:
-    branches:
-      - master
+    branches: [master]
   workflow_dispatch:
 
 permissions:
@@ -18,217 +17,74 @@ env:
   CI: true
 
 jobs:
-  lint:
-    name: Lint (non-blocking)
-    if: github.event_name == 'push'
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run ESLint
-        id: eslint
-        continue-on-error: true
-        run: npm run lint
-
-      - name: Publish lint result
-        if: always()
-        env:
-          LINT_OUTCOME: ${{ steps.eslint.outcome }}
-        run: |
-          if [ "$LINT_OUTCOME" = "success" ]; then
-            echo "### ✅ ESLint passed" >> "$GITHUB_STEP_SUMMARY"
-          else
-            echo "::warning::ESLint found problems. The commit check is intentionally non-blocking."
-            echo "### ⚠️ ESLint needs attention" >> "$GITHUB_STEP_SUMMARY"
-            echo "This check does not block the commit, but the reported issues should be fixed." >> "$GITHUB_STEP_SUMMARY"
-          fi
-
   unit-tests:
-    name: Unit tests
-    if: >-
-      github.event_name != 'push' ||
-      github.ref == 'refs/heads/master' ||
-      github.ref == 'refs/heads/develop'
+    name: Code quality and unit tests
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run unit and integration tests with coverage
-        run: npm run test:coverage
-
-      - name: Upload coverage report
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - uses: actions/upload-artifact@v7
         if: always()
-        uses: actions/upload-artifact@v4
         with:
           name: unit-test-coverage
           path: coverage/
-          if-no-files-found: ignore
+          if-no-files-found: warn
           retention-days: 7
 
   end-to-end-tests:
     name: End-to-end tests
-    if: >-
-      github.event_name != 'push' ||
-      github.ref == 'refs/heads/master' ||
-      github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Chromium
-        run: npx playwright install --with-deps chromium
-
-      - name: Run Playwright tests
-        run: npm run test:e2e
-
-      - name: Upload Playwright report
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - uses: actions/upload-artifact@v7
         if: always()
-        uses: actions/upload-artifact@v4
         with:
           name: playwright-report
           path: |
             playwright-report/
             test-results/
-          if-no-files-found: ignore
+          if-no-files-found: warn
           retention-days: 7
 
   production-readiness:
     name: Production readiness
-    if: >-
-      github.event_name != 'push' ||
-      github.ref == 'refs/heads/master' ||
-      github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
           cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Check formatting
-        run: npm run format:check
-
-      - name: Check TypeScript
-        run: npm run typecheck
-
-      - name: Check ESLint
-        run: npm run lint
-
-      - name: Audit production dependencies
-        run: npm audit --omit=dev --audit-level=high
-
-      - name: Build production image
-        run: docker build --tag posts-showcase:${{ github.sha }} .
-
-      - name: Smoke-test production image
-        env:
-          IMAGE_TAG: posts-showcase:${{ github.sha }}
-        run: |
-          container_name="posts-showcase-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          cleanup() {
-            docker rm --force "$container_name" >/dev/null 2>&1 || true
-          }
-          trap cleanup EXIT
-
-          docker run --detach --name "$container_name" --env GUARDIAN_API_KEY=ci-smoke-test-key --publish 127.0.0.1::80 "$IMAGE_TAG"
-          host_port="$(docker port "$container_name" 80/tcp)"
-          host_port="${host_port##*:}"
-          base_url="http://127.0.0.1:${host_port}"
-
-          ready=false
-          for attempt in {1..30}; do
-            if curl --fail --silent "$base_url/healthz" >/dev/null; then
-              ready=true
-              break
-            fi
-            sleep 2
-          done
-
-          if [ "$ready" != "true" ]; then
-            docker logs "$container_name"
-            exit 1
-          fi
-
-          rendered_config="$(docker exec "$container_name" nginx -T 2>&1)"
-          printf '%s\n' "$rendered_config" | grep --fixed-strings 'location /guardian-api/'
-          printf '%s\n' "$rendered_config" | grep --fixed-strings 'api-key=ci-smoke-test-key'
-
-          if grep --recursive --fixed-strings 'GUARDIAN_API_KEY' dist/; then
-            echo "::error::Runtime secret name leaked into the client bundle."
-            exit 1
-          fi
-
-          curl --fail --silent --show-error "$base_url/posts/world%2F2026%2Fsep%2F13%2Fci-smoke" | grep --fixed-strings '<div id="root"></div>'
-          curl --fail --silent --show-error --head "$base_url/" | grep --ignore-case '^x-content-type-options: nosniff'
-          curl --fail --silent --show-error --head "$base_url/" | grep --ignore-case '^x-frame-options: SAMEORIGIN'
-          curl --fail --silent --show-error --head "$base_url/" | grep --ignore-case '^referrer-policy: strict-origin-when-cross-origin'
-
-          asset_path="$(curl --fail --silent --show-error "$base_url/" | grep --only-matching --extended-regexp '/assets/[^"]+\.js' | head --lines=1)"
-          test -n "$asset_path"
-          curl --fail --silent --show-error --head "$base_url$asset_path" | grep --ignore-case '^x-content-type-options: nosniff'
-          curl --fail --silent --show-error --head "$base_url$asset_path" | grep --ignore-case '^x-frame-options: SAMEORIGIN'
-          curl --fail --silent --show-error --head "$base_url$asset_path" | grep --ignore-case '^referrer-policy: strict-origin-when-cross-origin'
-
-          test "$(curl --silent --output /dev/null --write-out '%{http_code}' "$base_url/guardian-api/search?api-key=attacker")" = "400"
-          test "$(curl --silent --output /dev/null --write-out '%{http_code}' --request POST "$base_url/guardian-api/search")" = "403"
+      - run: npm ci
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run test:production
 
   pull-request-gate:
     name: PR gate
-    if: always() && github.event_name != 'push'
-    needs:
-      - unit-tests
-      - end-to-end-tests
-      - production-readiness
+    if: always()
+    needs: [unit-tests, end-to-end-tests, production-readiness]
     runs-on: ubuntu-latest
     timeout-minutes: 5
-
     steps:
-      - name: Require every blocking check
+      - name: Require every check
         env:
           UNIT_RESULT: ${{ needs.unit-tests.result }}
           E2E_RESULT: ${{ needs.end-to-end-tests.result }}

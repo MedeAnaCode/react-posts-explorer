@@ -39,6 +39,22 @@ const optionalHttpsUrlSchema = z.preprocess(
   httpsUrlSchema.optional(),
 );
 
+function plainTextFromHtml(value: string | undefined) {
+  if (!value) return undefined;
+
+  // Анонсы Guardian содержат HTML: инертный template не запускает скрипты и не загружает ресурсы.
+  const template = document.createElement('template');
+  template.innerHTML = value;
+  template.content
+    .querySelectorAll('script, style')
+    .forEach((node) => node.remove());
+  template.content.querySelectorAll('br, p, div, li').forEach((node) => {
+    node.append(' ');
+    node.before(' ');
+  });
+  return template.content.textContent?.replace(/\s+/g, ' ').trim() || undefined;
+}
+
 export const postSchema = z.object({
   id: z.string().min(1),
   webTitle: z.string().min(1),
@@ -48,6 +64,7 @@ export const postSchema = z.object({
   fields: z
     .object({
       byline: optionalTextSchema,
+      trailText: optionalTextSchema.transform(plainTextFromHtml),
       bodyText: optionalTextSchema,
       thumbnail: optionalHttpsUrlSchema,
     })
@@ -76,4 +93,7 @@ export type Post = z.infer<typeof postSchema>;
 export type PostsPageData = {
   posts: Post[];
   totalCount: number;
+  // Во время смены страницы URL уже новый, а placeholderData ещё принадлежит старому запросу.
+  page: number;
+  limit: number;
 };

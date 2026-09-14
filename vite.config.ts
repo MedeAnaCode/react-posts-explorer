@@ -48,6 +48,9 @@ export default defineConfig(({ mode }) => {
       setupFiles: './src/test/setup.ts',
       css: true,
       coverage: {
+        include: ['src/**/*.{ts,tsx}'],
+        exclude: ['src/**/*.test.{ts,tsx}', 'src/test/**', 'src/**/*.d.ts'],
+        thresholds: { statements: 90, branches: 90, functions: 90, lines: 90 },
         provider: 'v8',
         reporter: ['text', 'html'],
       },

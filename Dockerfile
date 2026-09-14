@@ -11,6 +11,9 @@ RUN npm run build
 
 FROM nginx:1.29-alpine AS production
 
+RUN apk add --no-cache ca-certificates
+
+COPY --chmod=755 nginx/15-check-api-key.sh /docker-entrypoint.d/15-check-api-key.sh
 COPY nginx/default.conf /etc/nginx/templates/default.conf.template
 COPY --from=build /app/dist /usr/share/nginx/html
 

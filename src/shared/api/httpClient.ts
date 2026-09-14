@@ -24,7 +24,7 @@ export async function getJson(
       signal: options.signal,
     });
   } catch (error) {
-    if (error instanceof DOMException && error.name === 'AbortError') {
+    if (options.signal?.aborted) {
       throw error;
     }
 
@@ -44,11 +44,13 @@ export async function getJson(
   }
 
   try {
-    return {
-      data: (await response.json()) as unknown,
-      headers: response.headers,
-    };
+    return (await response.json()) as unknown;
   } catch (error) {
+    // Отмена возможна и после заголовков, пока браузер ещё читает тело ответа.
+    if (options.signal?.aborted) {
+      throw error;
+    }
+
     throw new ApiError('Сервер вернул ответ в неизвестном формате.', {
       kind: 'validation',
       cause: error,

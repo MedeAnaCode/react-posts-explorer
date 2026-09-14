@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
 
 import { PostCard, postsQueryOptions } from '../entities/post';
 import {
@@ -8,22 +7,15 @@ import {
   type PostsLimit,
   usePostsPagination,
 } from '../features/posts-pagination';
-import { isApiError } from '../shared/api';
-import { MessageState } from '../shared/ui';
+import { getApiErrorDescription, isApiError } from '../shared/api';
+import { MessageState, RefreshNotice } from '../shared/ui';
 import styles from './PostsPage.module.css';
 
-function getErrorDescription(error: unknown) {
-  if (isApiError(error) && error.kind === 'validation') {
-    return 'Ответ сервера не соответствует ожидаемому формату. Попробуйте ещё раз позже.';
-  }
-
-  return 'Не удалось загрузить новости. Проверьте подключение и повторите попытку.';
-}
-
 export function PostsPage() {
-  const location = useLocation();
   const { page, limit, setPage, setLimit } = usePostsPagination();
   const query = useQuery(postsQueryOptions(page, limit));
+  const canResetPage =
+    page > 1 && isApiError(query.error) && query.error.status === 400;
 
   return (
     <main className={`page-shell ${styles.page}`}>
@@ -44,25 +36,39 @@ export function PostsPage() {
         </select>
       </div>
 
+      {query.data && query.isError ? (
+        <RefreshNotice
+          description={getApiErrorDescription(query.error)}
+          busy={query.isFetching}
+          onRetry={() => void query.refetch()}
+        />
+      ) : null}
+
       {query.isPending ? (
         <MessageState
           title="Собираем новости"
           description="Запрашиваем свежие материалы The Guardian. Это займёт несколько секунд."
           busy
         />
-      ) : query.isError ? (
+      ) : !query.data ? (
         <MessageState
           title="Не получилось загрузить"
-          description={getErrorDescription(query.error)}
-          actionLabel="Повторить запрос"
-          onAction={() => void query.refetch()}
+          description={getApiErrorDescription(query.error)}
+          actionLabel={canResetPage ? 'На первую страницу' : 'Повторить запрос'}
+          onAction={
+            canResetPage ? () => setPage(1) : () => void query.refetch()
+          }
         />
       ) : query.data.posts.length === 0 ? (
         <MessageState
           title="На этой странице пусто"
-          description="Вернитесь назад — возможно, вы вышли за пределы каталога."
-          actionLabel={page > 1 ? 'На предыдущую страницу' : undefined}
-          onAction={page > 1 ? () => setPage(page - 1) : undefined}
+          description={
+            page > 1
+              ? 'Возможно, вы вышли за пределы каталога. Откройте первую страницу.'
+              : 'Сейчас в каталоге нет новостей. Попробуйте обновить его позже.'
+          }
+          actionLabel={page > 1 ? 'На первую страницу' : 'Повторить запрос'}
+          onAction={page > 1 ? () => setPage(1) : () => void query.refetch()}
         />
       ) : (
         <>
@@ -72,14 +78,16 @@ export function PostsPage() {
           >
             {query.data.posts.map((post) => (
               <li key={post.id}>
-                <PostCard post={post} listSearch={location.search} />
+                <PostCard
+                  post={post}
+                  listSearch={`?page=${query.data.page}&limit=${query.data.limit}`}
+                />
               </li>
             ))}
           </ol>
           <PostsPagination
-            page={page}
-            limit={limit}
-            itemCount={query.data.posts.length}
+            page={query.data.page}
+            limit={query.data.limit}
             totalCount={query.data.totalCount}
             disabled={query.isFetching}
             onPageChange={setPage}

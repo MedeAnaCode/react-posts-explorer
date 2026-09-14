@@ -1,0 +1,30 @@
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-accent-soft);
+}
+
+.notice p {
+  flex: 1 1 20rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.notice button {
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-accent);
+  color: var(--color-ink);
+  background: var(--color-surface);
+  font: inherit;
+  cursor: pointer;
+}
+
+.notice button:disabled {
+  cursor: wait;
+}

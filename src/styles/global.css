@@ -15,14 +15,11 @@
   --color-surface: #ffffff;
   --color-border: #daddd9;
   --color-border-strong: #8e9692;
-  --radius: 0;
-  --radius-small: 0;
-  --shadow-small: none;
-  --shadow: none;
   color: var(--color-ink);
   background: var(--color-surface);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  overflow-wrap: anywhere;
 }
 
 * {

@@ -17,7 +17,7 @@ Container_Boundary(spa, "Браузерное SPA") {
   Component(postApi, "API новостей", "postApi", "Формирует Guardian query, читает response.total/results/content и преобразует ответы в типизированные данные")
   Component(validation, "Модель и схемы", "TypeScript + Zod", "Проверяет строковый id, метаданные, fields и Guardian response envelope")
   Component(httpClient, "HTTP-клиент", "Fetch API + ApiError", "Собирает same-origin /guardian-api URL, выполняет GET и классифицирует network/http/validation ошибки")
-  Component(messageState, "Общие состояния UI", "MessageState", "Единообразно показывает загрузку, ошибку, пустой результат и повтор запроса")
+  Component(messageState, "Общие состояния UI", "MessageState / RefreshNotice", "Показывает начальные состояния и уведомляет об ошибке обновления без удаления кешированных данных")
 }
 
 Container_Ext(webGateway, "Web gateway", "Nginx / Vite proxy", "Добавляет GUARDIAN_API_KEY на серверной стороне")

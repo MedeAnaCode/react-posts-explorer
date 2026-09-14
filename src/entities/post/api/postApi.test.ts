@@ -48,9 +48,9 @@ describe('API новостей The Guardian', () => {
     expect(url.searchParams.get('page-size')).toBe('10');
     expect(url.searchParams.get('order-by')).toBe('newest');
     expect(url.searchParams.get('show-fields')).toBe(
-      'byline,bodyText,thumbnail',
+      'byline,trailText,thumbnail',
     );
-    expect(result).toMatchObject({ totalCount: 42 });
+    expect(result).toMatchObject({ totalCount: 42, page: 2, limit: 10 });
   });
 
   it('извлекает список из response.results', async () => {
@@ -64,6 +64,7 @@ describe('API новостей The Guardian', () => {
       webPublicationDate: '2026-09-01T10:00:00Z',
       fields: {
         byline: 'Автор 1',
+        trailText: 'Краткий анонс тестовой новости 1.',
         bodyText: 'Полный текст тестовой новости 1.',
         thumbnail: 'https://media.guim.co.uk/test-news-1.jpg',
       },
@@ -84,7 +85,12 @@ describe('API новостей The Guardian', () => {
             results: [
               {
                 ...mockPosts[0],
-                fields: { byline: ' ', bodyText: '', thumbnail: '' },
+                fields: {
+                  byline: ' ',
+                  trailText: '',
+                  bodyText: '',
+                  thumbnail: '',
+                },
               },
             ],
           },
@@ -96,8 +102,60 @@ describe('API новостей The Guardian', () => {
 
     expect(result.posts[0].fields).toEqual({
       byline: undefined,
+      trailText: undefined,
       bodyText: undefined,
       thumbnail: undefined,
+    });
+  });
+
+  it('преобразует HTML-анонс в текст, декодирует сущности и не выполняет скрипты', async () => {
+    server.use(
+      http.get('*/guardian-api/search', () =>
+        HttpResponse.json({
+          response: {
+            status: 'ok',
+            total: 1,
+            results: [
+              {
+                ...mockPosts[0],
+                fields: {
+                  trailText:
+                    '<p>First &amp; second</p><p>Third<br>line</p><script>window.__unsafe = true</script><style>.hidden { display: none }</style><img src="https://example.com/tracker" onerror="window.__unsafe = true">',
+                },
+              },
+            ],
+          },
+        }),
+      ),
+    );
+    const result = await getPosts({ page: 1, limit: 10 });
+    expect(result.posts[0].fields?.trailText).toBe('First & second Third line');
+    expect('__unsafe' in window).toBe(false);
+    expect(
+      document.querySelector('img[src="https://example.com/tracker"]'),
+    ).toBeNull();
+  });
+
+  it('отменяет HTTP-запрос через AbortSignal без преобразования в сетевую ошибку', async () => {
+    const controller = new AbortController();
+    controller.abort();
+    await expect(
+      getPosts({ page: 1, limit: 10, signal: controller.signal }),
+    ).rejects.toMatchObject({ name: 'AbortError' });
+  });
+
+  it('отличает невалидный JSON от HTTP-ошибки', async () => {
+    server.use(
+      http.get(
+        '*/guardian-api/search',
+        () =>
+          new HttpResponse('not json', {
+            headers: { 'Content-Type': 'application/json' },
+          }),
+      ),
+    );
+    await expect(getPosts({ page: 1, limit: 10 })).rejects.toMatchObject({
+      kind: 'validation',
     });
   });
 
