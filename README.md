@@ -1,5 +1,7 @@
 # Лента новостей The Guardian
 
+**Демо на сервере:** [открыть приложение](http://135.106.211.213:8080/) — локальная установка не нужна. Стенд доступен по HTTP на порту `8080`.
+
 ![React 19](https://img.shields.io/badge/React-19-149eca?logo=react)
 ![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript)
 ![Docker](https://img.shields.io/badge/Docker-Nginx-2496ed?logo=docker)
@@ -75,7 +77,7 @@ docker compose ps
 
 Multi-stage образ собирает SPA через Node.js и раздаёт его через Nginx. Ключ передаётся при запуске, а не при сборке. Для публикации нужен Docker-хост с HTTPS перед контейнером; Compose по умолчанию открывает порт только на `127.0.0.1`. Простого статического хостинга недостаточно: требуются API-прокси и возврат `index.html` для клиентских маршрутов.
 
-В репозитории не задан адрес публичного стенда. [Исходный код](https://github.com/MedeAnaCode/react-posts-explorer) и [GitHub Actions](https://github.com/MedeAnaCode/react-posts-explorer/actions) доступны отдельно.
+[Исходный код](https://github.com/MedeAnaCode/react-posts-explorer) и [GitHub Actions](https://github.com/MedeAnaCode/react-posts-explorer/actions).
 
 ## CI
 
