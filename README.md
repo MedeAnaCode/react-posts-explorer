@@ -1,6 +1,8 @@
 # Лента новостей The Guardian
 
-**Демо на сервере:** [открыть приложение](http://135.106.211.213:8080/) — локальная установка не нужна. Стенд доступен по HTTP на порту `8080`.
+## 🌐 [Открыть развёрнутое приложение →](http://135.106.211.213:8080/)
+
+Демо работает на сервере по HTTP на порту `8080` — локальная установка не нужна.
 
 ![React 19](https://img.shields.io/badge/React-19-149eca?logo=react)
 ![TypeScript strict](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript)
@@ -13,13 +15,52 @@
 - Сверх минимального задания: проверка ответов Zod, кеш TanStack Query, сохранение контента при ошибке обновления, адаптивный интерфейс и клавиатурное управление.
 - Инфраструктура: серверный API-прокси без ключа в браузере, Docker/Nginx, unit-, интеграционные и браузерные тесты, обязательные проверки GitHub Actions.
 
-## Что стоит посмотреть в коде
+## Архитектура проекта
 
-- [PostsPage.tsx](src/pages/PostsPage.tsx) — связь URL, кеша и состояний интерфейса; старые карточки сохраняют правильную ссылку возврата во время загрузки.
-- [postApi.ts](src/entities/post/api/postApi.ts) и [post.ts](src/entities/post/model/post.ts) — проверка внешних данных и безопасное преобразование HTML-анонса в текст.
-- [posts-pagination/model](src/features/posts-pagination/model) — нормализация query-параметров и сброс страницы при смене лимита.
-- [AppRouter.test.tsx](src/app/AppRouter.test.tsx) и [e2e/app.spec.ts](e2e/app.spec.ts) — пользовательские сценарии и регрессии загрузки, пагинации и возврата.
-- [nginx/default.conf](nginx/default.conf) и [smoke-production.mjs](scripts/smoke-production.mjs) — защита ключа, TLS, общий лимит запросов и проверка работающего контейнера.
+```mermaid
+flowchart LR
+    reader[Читатель]
+    guardian[Guardian Content API\nвнешний REST API]
+    ci[GitHub Actions CI\nкачество + Vitest + Playwright\nproduction smoke]
+
+    subgraph local[Локальная разработка]
+        vite[Vite dev/preview\n:5173 / :4173]
+        localKey[GUARDIAN_API_KEY\nиз .env]
+        vite -. runtime proxy .-> guardian
+        localKey -. только сервер Vite .-> vite
+    end
+
+    subgraph production[Production: Docker Compose]
+        compose[Compose\n127.0.0.1:APP_PORT → :80]
+
+        subgraph image[Multi-stage Docker image]
+            node[Node 22\nnpm ci · npm run build]
+            dist[dist\nстатические файлы SPA]
+            nginx[Nginx 1.29\nSPA fallback · /healthz\nзащитные заголовки]
+            node --> dist --> nginx
+        end
+
+        runtimeKey[GUARDIAN_API_KEY\nпеременная окружения при запуске]
+        compose --> nginx
+        runtimeKey -. entrypoint подставляет ключ .-> nginx
+    end
+
+    subgraph browser[Браузер: React 19 + TypeScript]
+        router[React Router\nURL: маршруты, page, limit]
+        pages[Pages → Features → Entities → Shared]
+        query[TanStack Query\nкеш и серверное состояние]
+        zod[Zod\nпроверка ответов API]
+        router --> pages --> query --> zod
+    end
+
+    reader -->|открывает приложение| compose
+    nginx -->|HTML, JS, CSS| browser
+    browser -->|GET /guardian-api/*\nsame-origin JSON| nginx
+    nginx ==>|HTTPS: разрешённые параметры,\nTLS, rate limit 1 req/s, ключ| guardian
+    ci -. проверяет репозиторий и образ .-> node
+```
+
+В production нет прикладного backend, базы данных и глобального client store: URL хранит навигацию, TanStack Query — серверные данные. Ключ API не попадает в браузер: Vite или Nginx добавляет его на серверной стороне. Подробная документация и исходные диаграммы — в [архитектуре](docs/architecture.md) и [каталоге диаграмм](docs/diagrams/README.md).
 
 ## Быстрый запуск
 
