@@ -73,7 +73,7 @@ export function PostsPage() {
       ) : (
         <>
           <ol
-            className={`${styles.grid} ${query.isFetching ? styles.updating : ''}`}
+            className={`${styles.grid} ${query.data.posts.length === 20 ? styles.gridTwenty : ''} ${query.isFetching ? styles.updating : ''}`}
             aria-busy={query.isFetching}
           >
             {query.data.posts.map((post) => (

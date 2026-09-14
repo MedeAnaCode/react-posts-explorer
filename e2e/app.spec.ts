@@ -281,3 +281,100 @@ test('управляется клавиатурой и не создаёт го�
     ),
   ).toBe(true);
 });
+
+test('заполняет grid без пустых ячеек для 10 и 20 новостей на всех брейкпоинтах', async ({
+  page,
+}) => {
+  const viewports = [320, 375, 768, 1024, 1440];
+
+  for (const width of viewports) {
+    for (const limit of [10, 20]) {
+      await test.step(`${width}px, ${limit} новостей`, async () => {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto(`/posts?page=1&limit=${limit}`);
+        await expect(page.locator('main ol > li')).toHaveCount(limit);
+
+        const layout = JSON.parse(
+          await page.evaluate(`(() => {
+            const grid = document.querySelector('main ol');
+            if (!grid) throw new Error('Grid не найден');
+            const style = getComputedStyle(grid);
+            const columns = Array.from(
+              style.gridTemplateColumns.matchAll(/([\\d.]+)px/g),
+              (match) => Number(match[1]),
+            );
+            const gap = Number.parseFloat(style.columnGap);
+            const gridLeft = grid.getBoundingClientRect().left;
+            const starts = columns.reduce((result, _, index) => {
+              const previous = result[index - 1];
+              result.push(index === 0 ? gridLeft : previous + columns[index - 1] + gap);
+              return result;
+            }, []);
+            const rows = new Map();
+
+            for (const item of Array.from(grid.children)) {
+              const rect = item.getBoundingClientRect();
+              const row = Math.round(rect.top);
+              const rowCells = rows.get(row) ?? {
+                cells: Array(columns.length).fill(false),
+                ranges: [],
+              };
+              const start = starts.findIndex((left) => Math.abs(rect.left - left) < 1);
+              let end = -1;
+              for (let index = columns.length - 1; index >= 0; index -= 1) {
+                if (Math.abs(rect.right - (starts[index] + columns[index])) < 1) {
+                  end = index;
+                  break;
+                }
+              }
+
+              if (start < 0 || end < start) {
+                throw new Error('Не удалось определить положение карточки в grid');
+              }
+              rowCells.cells.fill(true, start, end + 1);
+              rowCells.ranges.push({ start, end });
+              rows.set(row, rowCells);
+            }
+
+            return JSON.stringify({
+              columns: columns.length,
+              rows: Array.from(rows.entries())
+                .sort(([first], [second]) => first - second)
+                .map(([, row]) => row),
+              noHorizontalScroll: document.documentElement.scrollWidth <= window.innerWidth,
+            });
+          })()`),
+        ) as {
+          columns: number;
+          rows: Array<{
+            cells: boolean[];
+            ranges: Array<{ start: number; end: number }>;
+          }>;
+          noHorizontalScroll: boolean;
+        };
+
+        expect(layout.columns).toBe(width < 672 ? 1 : width < 992 ? 2 : 4);
+        const expectedRows =
+          layout.columns === 1
+            ? limit
+            : layout.columns === 2
+              ? limit === 10
+                ? 6
+                : 11
+              : limit === 10
+                ? 3
+                : 6;
+        expect(layout.rows).toHaveLength(expectedRows);
+        for (const row of layout.rows) {
+          expect(row.cells).toEqual(Array(layout.columns).fill(true));
+          expect(row.ranges[0]?.start).toBe(0);
+          expect(row.ranges.at(-1)?.end).toBe(layout.columns - 1);
+          for (let index = 1; index < row.ranges.length; index += 1) {
+            expect(row.ranges[index].start).toBe(row.ranges[index - 1].end + 1);
+          }
+        }
+        expect(layout.noHorizontalScroll).toBe(true);
+      });
+    }
+  }
+});

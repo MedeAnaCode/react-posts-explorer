@@ -59,6 +59,12 @@
   }
 }
 
+@media (min-width: 62.001rem) {
+  .gridTwenty > li:last-child {
+    grid-column: span 4;
+  }
+}
+
 .updating {
   opacity: 0.6;
   transition: opacity 160ms ease;
